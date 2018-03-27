@@ -2,18 +2,25 @@
 #define __LOG_H
 
 #include <stdio.h>
+#include <stdarg.h>
+
+#ifndef MAX_LOG_LENGHT
+#define MAX_LOG_LENGHT 100
+#endif
 
 #define LOG_FATAL -1
 #define LOG_ERROR 0
 #define LOG_WARNING 1
 #define LOG_INFO 2
+#define LOG_DEBUG 3
 
 typedef int LogLevel;
 
-void log(const char* message, LogLevel level);
-void log_fatal(const char* error);
-void log_error(const char* error);
-void log_warning(const char* error);
-void log_info(const char* error);
+void _log(char *message, LogLevel level, va_list args);
+void log_fatal(char *message, ...);
+void log_error(char *message, ...);
+void log_warning(char *message, ...);
+void log_info(char *message, ...);
+void log_debug(char *message, ...);
 
 #endif

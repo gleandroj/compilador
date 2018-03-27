@@ -1,9 +1,11 @@
 #ifndef __TYPINGS_H
 #define __TYPINGS_H
 
+typedef int Booleano;
+
 #define TRUE 1
 #define FALSE 0
 
-typedef int Booleano;
+#define DEBUG_MODE TRUE
 
 #endif

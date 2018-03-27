@@ -4,7 +4,7 @@
 
 #include "list.h"
 
-void list_new(List *list, int elementSize, freeFunction freeFn)
+void list_new(List *list, int elementSize, FreeFunction freeFn)
 {
     assert(elementSize > 0);
     list->logicalLength = 0;
@@ -70,7 +70,7 @@ void list_append(List *list, void *element)
     list->logicalLength++;
 }
 
-void list_for_each(List *list, listIterator iterator)
+void list_for_each(List *list, ListIterator iterator)
 {
     assert(iterator != NULL);
 

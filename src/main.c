@@ -1,31 +1,19 @@
+
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "util/typings.h"
+#include "util/memory.h"
 #include "util/storage.h"
-#include "util/list.h"
+#include "util/log.h"
 
-Booleano iterate_int(void *data)
-{
-    printf("Found value: %d\n", *(int *)data);
-    return TRUE;
-}
+#define FILE_DIR "/home/gabriel/Projects/compilador/resources/arquivo.txt"
 
 int main()
 {
-    int numbers = 10;
-    printf("Generating list with the first %d positive numbers...\n", numbers);
-
-    int i;
-    List list;
-    list_new(&list, sizeof(int), NULL);
-
-    for (i = 1; i <= numbers; i++)
-    {
-        list_append(&list, &i);
-    }
-
-    list_for_each(&list, iterate_int);
-
-    list_destroy(&list);
-    printf("Successfully freed %d numbers...\n", numbers);
+    File file;
+    log_info("Inicializando o processo de compilação...\n");
+    log_info("Inicializando leitura do arquivo (%s)\n", FILE_DIR);
+    file_read(&file, FILE_DIR);
+    log_info("Processo finalizado com sucesso...\n");
 }

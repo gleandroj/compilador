@@ -2,13 +2,37 @@
 #define __MEMORY_H
 
 #include <stdlib.h>
+#include "typings.h"
 
-void* can_allocate_memory(size_t _sizeof);
+/**
+ * Max Allowed Memory Usage in kb
+ */
+#ifndef MAX_MEMORY_USAGE
+#define MAX_MEMORY_USAGE 100000
+#endif
 
-void allocate_memory(size_t _sizeof);
+#if DEBUG_MODE == TRUE
+    #define debug_current(memory) log_debug("Currect allocated memory usage: %d\n", memory);
+    #define debug_free(memory) log_debug("Free %d of memory\n", memory);
+#else
+    #define debug_current(memory)
+    #define debug_free(memory)
+#endif
+
+Booleano can_allocate_memory(size_t _sizeof);
+
+void add_external_allocated_memory(void *pointer);
+
+void remove_external_allocated_memory(void *pointer);
+
+void *allocate_memory(size_t _sizeof);
 
 void free_memory(void *pointer);
 
-int used_memory();
+int current_used_memory();
+
+int used_memory(void *pointer);
+
+extern unsigned int CURRENT_ALLOCATE_MEMORY;
 
 #endif
