@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <malloc.h>
+#include <string.h>
 
 #include "typings.h"
 #include "memory.h"
@@ -29,11 +30,15 @@ void *allocate_memory(size_t _sizeof)
     void *allocated;
     if (!can_allocate_memory(_sizeof) || !(allocated = malloc(_sizeof)))
     {
-        log_fatal("Cannot allocate %f memory.", (int)_sizeof);
+        log_fatal("Cannot allocate %d bytes of memory.", (int)_sizeof);
     }
     CURRENT_ALLOCATE_MEMORY += used_memory(allocated);
     debug_current(CURRENT_ALLOCATE_MEMORY);
     return allocated;
+}
+
+void *copy_memory(void *from, void *to, size_t _sizeof){
+    return memcpy(to, from, _sizeof);
 }
 
 void free_memory(void *pointer)

@@ -6,6 +6,6 @@ typedef int Booleano;
 #define TRUE 1
 #define FALSE 0
 
-#define DEBUG_MODE TRUE
+#define DEBUG_MODE FALSE
 
 #endif

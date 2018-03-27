@@ -12,8 +12,8 @@
 #endif
 
 #if DEBUG_MODE == TRUE
-    #define debug_current(memory) log_debug("Currect allocated memory usage: %d\n", memory);
-    #define debug_free(memory) log_debug("Free %d of memory\n", memory);
+    #define debug_current(memory) log_debug("Currect allocated memory usage: %d bytes\n", memory);
+    #define debug_free(memory) log_debug("Free %d bytes of memory\n", memory);
 #else
     #define debug_current(memory)
     #define debug_free(memory)
@@ -32,6 +32,8 @@ void free_memory(void *pointer);
 int current_used_memory();
 
 int used_memory(void *pointer);
+
+void *copy_memory(void *from, void *to, size_t _sizeof);
 
 extern unsigned int CURRENT_ALLOCATE_MEMORY;
 
