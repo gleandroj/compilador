@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "storage.h"
-#include "list.h"
+#include "util/storage.h"
+#include "util/list.h"
 
-booleano iterate_int(void *data)
+Booleano iterate_int(void *data)
 {
     printf("Found value: %d\n", *(int *)data);
     return TRUE;

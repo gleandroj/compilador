@@ -75,7 +75,7 @@ void list_for_each(List *list, listIterator iterator)
     assert(iterator != NULL);
 
     listNode *node = list->head;
-    booleano result = TRUE;
+    Booleano result = TRUE;
     while (node != NULL && result)
     {
         result = iterator(node->data);
@@ -83,7 +83,7 @@ void list_for_each(List *list, listIterator iterator)
     }
 }
 
-void list_head(List *list, void *element, booleano removeFromList)
+void list_head(List *list, void *element, Booleano removeFromList)
 {
     assert(list->head != NULL);
 
