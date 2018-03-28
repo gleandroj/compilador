@@ -11,10 +11,13 @@
 
 void free_line(void *data)
 {
-    free_memory((Line*)data);
+    Line *line = (Line*)data;
+    free_memory(line->lineText);
+    free_memory(line);
 }
 
-Line * line_new(size_t textLineSize){
+Line *line_new(size_t textLineSize)
+{
     Line *line = (Line *)allocate_memory(sizeof(Line));
     line->lineText = (char *)allocate_memory(textLineSize);
     return line;
@@ -22,58 +25,60 @@ Line * line_new(size_t textLineSize){
 
 void file_read(File *file, char *filename)
 {
-    list_new(&file->lines, sizeof(Line), free_line);
+    file->lines = (List *)allocate_memory(sizeof(List));
+    list_new(file->lines, sizeof(Line), free_line);
+
     file->charactersCount = 0;
     file->linesCount = 0;
+
     FILE *arq;
     arq = fopen(filename, "r");
     add_external_allocated_memory(arq);
-    
-    if (arq == NULL)
-        log_error("Falha na leitura do arquivo: (%s)\n", filename);
+
+    if (arq == NULL) log_error("Falha na leitura do arquivo: (%s)\n", filename);
 
     size_t BUFFER_SIZE = MAX_LINE_READ_CHAR * sizeof(char);
-    char * buffer = (char *)allocate_memory(BUFFER_SIZE);
+    char *buffer = (char *)allocate_memory(BUFFER_SIZE);
+    int bufferlen = 0;
 
     while ((fgets(buffer, BUFFER_SIZE, arq)) != NULL)
     {
-        Line *line = line_new(strlen(buffer) * sizeof(char));
+        Line *line = line_new(((bufferlen = strlen(buffer)) + 1) * sizeof(char));
         line->lineNumber = file->linesCount;
-        copy_memory(buffer, line->lineText, strlen(buffer) * sizeof(char) - 1);
+
+        //bufferlen-- ignore \n char
+        copy_memory(buffer, line->lineText, (--bufferlen) * sizeof(char));
+
+        file->charactersCount += line->charCount = bufferlen;
         file->linesCount++;
-        file->charactersCount += line->charCount = (int)strlen(buffer) - 1;
-        list_append(&file->lines, line);
+        
+        list_append(file->lines, line);
     }
-    
+
     free_memory(buffer);
     free_memory(arq);
 }
 
 void file_destroy(File *file)
 {
-    list_destroy(&file->lines);
+    list_destroy(file->lines);
+    free_memory(file->lines);
     free_memory(file);
-}
-
-void file_character_for_each(File *file, FileCharIterator fileIteratorFn)
-{
-}
-
-void file_line_for_each(File *file, FileLineIterator fileIteratorFn)
-{
 }
 
 char file_get_char_at(File *file, int position)
 {
-    listNode *node = file->lines.head;
+    ListNode *node = file->lines->head;
     int charPosition = 0;
     assert(position >= 0 && position < file->charactersCount);
     while (node != NULL)
     {
-        Line* line = ((Line *)(node->data));
+        Line *line = ((Line *)(node->data));
         char *c, *lineText = line->lineText;
-        for(c = lineText; *c; c++){
-            if(charPosition == position){
+        for (c = lineText; *c; c++)
+        {
+            if (charPosition == position)
+            {
                 return *c;
             }
             charPosition++;
@@ -85,7 +90,7 @@ char file_get_char_at(File *file, int position)
 
 Line *file_get_line(File *file, int line)
 {
-    listNode *node = file->lines.head;
+    ListNode *node = file->lines->head;
     while (node != NULL)
     {
         if (((Line *)(node->data))->lineNumber == line)

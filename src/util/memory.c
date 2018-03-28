@@ -15,25 +15,46 @@ Booleano can_allocate_memory(size_t _sizeof)
 }
 
 void add_external_allocated_memory(void *pointer){
-    CURRENT_ALLOCATE_MEMORY += used_memory(pointer);
+    int used = used_memory(pointer);
+    CURRENT_ALLOCATE_MEMORY += used;
+    log_debug("External allocated more %d bytes of memory.\n", used);
     debug_current(CURRENT_ALLOCATE_MEMORY);
 }
 
 void remove_external_allocated_memory(void *pointer){
     int memory = used_memory(pointer);
     CURRENT_ALLOCATE_MEMORY = ((CURRENT_ALLOCATE_MEMORY - memory) <= 0 ? 0 : CURRENT_ALLOCATE_MEMORY - memory);
+    log_debug("External free %d bytes of memory.\n", memory);
     debug_current(CURRENT_ALLOCATE_MEMORY);
 }
 
 void *allocate_memory(size_t _sizeof)
 {
     void *allocated;
+    int memory;
     if (!can_allocate_memory(_sizeof) || !(allocated = malloc(_sizeof)))
     {
         log_fatal("Cannot allocate %d bytes of memory.", (int)_sizeof);
     }
-    CURRENT_ALLOCATE_MEMORY += used_memory(allocated);
+    CURRENT_ALLOCATE_MEMORY += memory = used_memory(allocated);
+    log_debug("Allocated more %d bytes of memory.\n", memory);
     debug_current(CURRENT_ALLOCATE_MEMORY);
+    return allocated;
+}
+
+void *realloc_memory(void *allocated, size_t _sizeof){
+    int oldmemory, memory;
+    CURRENT_ALLOCATE_MEMORY -= oldmemory = used_memory(allocated);
+
+    if (!can_allocate_memory(_sizeof) || !(allocated = realloc(allocated, _sizeof)))
+    {
+        log_fatal("Cannot reallocate %d bytes of memory.", (int)_sizeof);
+    }
+    CURRENT_ALLOCATE_MEMORY += memory = used_memory(allocated);
+
+    log_debug("Reallocated from %d bytes to %d bytes of memory.\n", oldmemory, memory);
+    debug_current(CURRENT_ALLOCATE_MEMORY);
+
     return allocated;
 }
 

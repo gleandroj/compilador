@@ -22,6 +22,8 @@ void remove_external_allocated_memory(void *pointer);
 
 void *allocate_memory(size_t _sizeof);
 
+void *realloc_memory(void *allocated, size_t _sizeof);
+
 void free_memory(void *pointer);
 
 int current_used_memory();

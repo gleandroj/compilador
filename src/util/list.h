@@ -7,30 +7,24 @@
 typedef void (*FreeFunction)(void *);
 typedef Booleano (*ListIterator)(void *);
 
-typedef struct _listNode
+typedef struct _ListNode
 {
     void *data;
-    struct _listNode *next;
-} listNode;
+    struct _ListNode *next;
+} ListNode;
 
 typedef struct
 {
     int logicalLength;
     int elementSize;
-    listNode *head;
-    listNode *tail;
+    ListNode *head;
+    ListNode *tail;
     FreeFunction freeFn;
 } List;
 
 void list_new(List *list, int elementSize, FreeFunction freeFn);
 void list_destroy(List *list);
-
-void list_prepend(List *list, void *element);
 void list_append(List *list, void *element);
-int list_size(List *list);
-
 void list_for_each(List *list, ListIterator iterator);
-void list_head(List *list, void *element, Booleano removeFromList);
-void list_tail(List *list, void *element);
 
 #endif
