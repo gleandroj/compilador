@@ -8,16 +8,11 @@
  * Max Allowed Memory Usage in kb
  */
 #ifndef MAX_MEMORY_USAGE
-#define MAX_MEMORY_USAGE 100000
+#define MAX_MEMORY_USAGE 10000
 #endif
 
-#if DEBUG_MODE == TRUE
-    #define debug_current(memory) log_debug("Currect allocated memory usage: %d bytes\n", memory);
-    #define debug_free(memory) log_debug("Free %d bytes of memory\n", memory);
-#else
-    #define debug_current(memory)
-    #define debug_free(memory)
-#endif
+#define debug_current(memory) log_debug("Currect allocated memory usage: %d bytes\n", memory);
+#define debug_free(memory) log_debug("Free %d bytes of memory\n", memory);
 
 Booleano can_allocate_memory(size_t _sizeof);
 

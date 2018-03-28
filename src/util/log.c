@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include "memory.h"
 #include "typings.h"
+#include "memory.h"
 #include "log.h"
 
 void _log(char *message, LogLevel level, va_list args)
@@ -77,6 +77,7 @@ void log_info(char *message, ...)
     va_end(args);
 }
 
+#if DEBUG_MODE == TRUE
 void log_debug(char *message, ...)
 {
     va_list args;
@@ -84,3 +85,6 @@ void log_debug(char *message, ...)
     _log(message, LOG_DEBUG, args);
     va_end(args);
 }
+#else
+void log_debug(char *message, ...){}
+#endif

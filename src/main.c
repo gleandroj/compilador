@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <ctype.h>
 #include "util/typings.h"
 #include "util/memory.h"
 #include "util/storage.h"
@@ -17,7 +17,7 @@ int main()
     file_read(file, FILE_DIR);
     log_info("Processo finalizado com sucesso...\n");
     log_info("%d characters and %d lines were read.\n", file->charactersCount, file->linesCount);
-    Line *line = file_get_line(file, 1);
-    printf("Value: %s\n", line->lineText);
+    //Line *line = file_get_line(file, 10);
+    printf("Value: %c\n", file_get_char_at(file, 53));
     file_destroy(file);
 }

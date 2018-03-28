@@ -10,6 +10,7 @@
 
 typedef struct _line{
     int lineNumber;
+    int charCount;
     char* lineText;
 } Line;
 
@@ -29,7 +30,7 @@ void file_destroy(File* file);
 void file_character_for_each(File* file, FileCharIterator fileIteratorFn);
 void file_line_for_each(File* file, FileLineIterator fileIteratorFn);
 
-char* file_get_char_at(File* file, int position);
+char file_get_char_at(File* file, int position);
 Line* file_get_line(File* file, int line);
 
 #endif
