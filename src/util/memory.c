@@ -3,6 +3,7 @@
 #include <malloc.h>
 #include <string.h>
 
+#include "../config/constants.h"
 #include "typings.h"
 #include "memory.h"
 #include "log.h"
@@ -34,7 +35,8 @@ void *allocate_memory(size_t _sizeof)
     int memory;
     if (!can_allocate_memory(_sizeof) || !(allocated = malloc(_sizeof)))
     {
-        log_fatal("Cannot allocate %d bytes of memory.", (int)_sizeof);
+        log_debug("Cannot allocate %d bytes of memory.", (int)_sizeof);
+        log_error(getMessage(ERROR_MEM_INSUF));
     }
     CURRENT_ALLOCATE_MEMORY += memory = used_memory(allocated);
     log_debug("Allocated more %d bytes of memory.\n", memory);
@@ -48,7 +50,8 @@ void *realloc_memory(void *allocated, size_t _sizeof){
 
     if (!can_allocate_memory(_sizeof) || !(allocated = realloc(allocated, _sizeof)))
     {
-        log_fatal("Cannot reallocate %d bytes of memory.", (int)_sizeof);
+        log_debug("Cannot reallocate %d bytes of memory.", (int)_sizeof);
+        log_error(getMessage(ERROR_MEM_INSUF));
     }
     CURRENT_ALLOCATE_MEMORY += memory = used_memory(allocated);
 

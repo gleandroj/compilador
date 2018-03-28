@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
-#include "messages.h"
+
+#include "config/constants.h"
 #include "util/typings.h"
 #include "util/memory.h"
 #include "util/storage.h"

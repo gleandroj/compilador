@@ -2,18 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-
 #include "typings.h"
 #include "memory.h"
 #include "log.h"
 
 void _log(char *message, LogLevel level, va_list args)
 {
-    if(!can_allocate_memory(MAX_LOG_LENGHT * sizeof(char))){
-        printf("[ERROR] - Cannot allocate memory.\n");
-        exit(-1);
-    }
-    
     char *buffer = (char *)malloc(MAX_LOG_LENGHT * sizeof(char));
     Booleano _abort = FALSE;
 

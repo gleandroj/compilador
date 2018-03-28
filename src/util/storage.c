@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <assert.h>
+
 #include "typings.h"
 #include "log.h"
 #include "list.h"
@@ -54,7 +55,7 @@ void file_read(File *file, char *filename)
         
         list_append(file->lines, line);
     }
-
+    
     free_memory(buffer);
     free_memory(arq);
 }

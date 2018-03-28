@@ -36,8 +36,10 @@ void list_destroy(List *list)
 void list_append(List *list, void *element)
 {
     ListNode *node = allocate_memory(sizeof(ListNode));
+
     node->data = element;
     node->next = NULL;
+
     if (list->logicalLength == 0)
     {
         list->head = list->tail = node;
@@ -47,6 +49,7 @@ void list_append(List *list, void *element)
         list->tail->next = node;
         list->tail = node;
     }
+
     list->logicalLength++;
 }
 
