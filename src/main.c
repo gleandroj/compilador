@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "messages.h"
 #include "util/typings.h"
 #include "util/memory.h"
 #include "util/storage.h"
@@ -19,5 +20,6 @@ int main()
     log_info("Foram lidas %d linhas e %d caracteres.\n", file->linesCount, file->charactersCount);
     Line *line = file_get_line(file, 10);
     printf("Value: %c\n", file_get_char_at(file, 0));
+    log_error(getMessage(ERROR_MOD_PRI_INEX));
     file_destroy(file);
 }
