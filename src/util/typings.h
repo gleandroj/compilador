@@ -1,11 +1,8 @@
 #ifndef __TYPINGS_H
 #define __TYPINGS_H
 
-typedef int Booleano;
+typedef enum { FALSE = 0, TRUE = 1 } Booleano;
 
-#define TRUE 1
-#define FALSE 0
-
-#define DEBUG_MODE FALSE
+//#define DEBUG_MODE
 
 #endif

@@ -5,10 +5,10 @@
 #include "typings.h"
 
 /**
- * Max Allowed Memory Usage in kb
+ * Max Allowed Memory Usage in bytes
  */
 #ifndef MAX_MEMORY_USAGE
-#define MAX_MEMORY_USAGE 10000
+#define MAX_MEMORY_USAGE 1000000
 #endif
 
 #define debug_current(memory) log_debug("Currect allocated memory usage: %d bytes\n", memory);

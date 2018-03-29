@@ -71,7 +71,7 @@ void log_info(char *message, ...)
     va_end(args);
 }
 
-#if DEBUG_MODE == TRUE
+#ifdef DEBUG_MODE
 void log_debug(char *message, ...)
 {
     va_list args;

@@ -1,4 +1,3 @@
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -10,6 +9,7 @@
 #include "util/log.h"
 
 #define FILE_DIR "/home/gabriel/Projects/compilador/resources/arquivo.txt"
+
 
 int main()
 {

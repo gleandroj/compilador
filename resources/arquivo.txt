@@ -1,11 +1,12 @@
-Ptesteabcd| f g h i j k l m n o ; 12345895467045
-teste a b c d e f g h i j k l m n o ; 1234589546704
-teste a b c d e f g h i j k l m n o ; 123458954670
-teste a b c d e f g h i j k l m n o ; 12345895467
-teste a b c d e f g h i j k l m n o ; 1234589546
-teste a b c d e f g h i j k l m n o ; 123458954
-teste a b c d e f g h i j k l m n o ; 12345895
-teste a b c d e f g h i j k l m n o ; 1234589
-teste a b c d e f g h i j k l m n o ; 12345
-teste a b c d e f g h i j k l m n o ; 1234
-teste a b c d e f g h i j k l m n o ; 12 
+
+principal(){
+    inteiro &a, &b;
+    caractere &nome[30];
+    funcao fsoma( &a,&b);
+}
+
+funcao fsoma( inteiro &c, inteiro &d){
+    inteiro &e;
+    &e=&c+&d;
+    escrita(&e)
+}
