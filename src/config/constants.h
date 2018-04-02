@@ -8,4 +8,9 @@ extern char * const messages[];
 
 char * const getMessage(int index);
 
+//https://regex101.com/r/Ba1g47/1/
+//principal(){} 
+#define RGX_PRINCIPAL "^(principal\\(\\))((\\R)?(\\{))(\\R|.)*(\\})$"
+
+
 #endif

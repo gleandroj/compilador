@@ -8,13 +8,13 @@
 #define MAX_LOG_LENGHT 100
 #endif
 
-#define LOG_FATAL -1
-#define LOG_ERROR 0
-#define LOG_WARNING 1
-#define LOG_INFO 2
-#define LOG_DEBUG 3
-
-typedef int LogLevel;
+typedef enum {
+    LOG_FATAL = -1,
+    LOG_ERROR = 0,
+    LOG_WARNING = 1,
+    LOG_INFO = 2,
+    LOG_DEBUG = 3,
+} LogLevel;
 
 void _log(char *message, LogLevel level, va_list args);
 void log_fatal(char *message, ...);

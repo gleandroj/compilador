@@ -12,7 +12,7 @@
 
 void free_line(void *data)
 {
-    Line *line = (Line*)data;
+    Line *line = (Line *)data;
     free_memory(line->lineText);
     free_memory(line);
 }
@@ -36,7 +36,8 @@ void file_read(File *file, char *filename)
     arq = fopen(filename, "r");
     add_external_allocated_memory(arq);
 
-    if (arq == NULL) log_error("Falha na leitura do arquivo: (%s)\n", filename);
+    if (arq == NULL)
+        log_error("Falha na leitura do arquivo: (%s)\n", filename);
 
     size_t BUFFER_SIZE = MAX_LINE_READ_CHAR * sizeof(char);
     char *buffer = (char *)allocate_memory(BUFFER_SIZE);
@@ -48,14 +49,15 @@ void file_read(File *file, char *filename)
         line->lineNumber = file->linesCount;
 
         //bufferlen-- ignore \n char
-        copy_memory(buffer, line->lineText, (--bufferlen) * sizeof(char));
+        //bufferlen =  (int)buffer[bufferlen - 1] == 10 ? bufferlen-- : bufferlen;
+        copy_memory(buffer, line->lineText, bufferlen * sizeof(char));
 
         file->charactersCount += line->charCount = bufferlen;
         file->linesCount++;
-        
+
         list_append(file->lines, line);
     }
-    
+
     free_memory(buffer);
     free_memory(arq);
 }
