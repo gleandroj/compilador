@@ -6,6 +6,6 @@
 
 char *substr(char *input, int offset, int len);
 
-Booleano regex_match(char *input, char *pattern, regex_t *matchs);
+Booleano regex_match(char *input, char *pattern);
 
 #endif

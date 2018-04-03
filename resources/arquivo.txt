@@ -6,7 +6,7 @@ principal(){
 }
 
 funcao fsoma( inteiro &c, inteiro &d){
-    inteiro &e;
+    inteiro &c;
     &e=&c+&d;
-    escrita(&e)
+    escrita(&e);
 }

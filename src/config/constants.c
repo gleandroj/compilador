@@ -1,3 +1,5 @@
+//#include <storage.h>
+
 /**
  * Mensagens
 **/
@@ -6,6 +8,6 @@ char * const messages[] = {
     "Memória Insuficiente.\n"
 };
 
-char * const getMessage(int index){
+char* const getMessage(int index){
     return messages[index];
 }
