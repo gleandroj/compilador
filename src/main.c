@@ -14,7 +14,7 @@
 #include "util/log.h"
 #include "analysers/lexico.h"
 
-#define FILE_DIR "/home/gabriel/Projects/compilador/resources/arquivo.txt"
+#define FILE_DIR "/home/gabriel/Projects/gleandroj/compilador/resources/arquivo.txt"
 File *file = NULL;
 
 int main()

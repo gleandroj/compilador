@@ -6,6 +6,7 @@
 extern char * const reserved_words[];
 
 typedef enum {
+    nao_identificado = -1,
     variavel = 0,
     funcao = 1,
     principal = 2,
