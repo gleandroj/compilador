@@ -6,7 +6,6 @@
 #include <string.h>
 #include <regex.h>
 
-#include "analyzer/lexico.h"
 #include "util/helpers.h"
 #include "config/constants.h"
 #include "util/typings.h"

@@ -24,10 +24,16 @@ typedef struct _Token {
     TokenType type;
     TokenDataType dataType;
     char* tokenValue;
+    char *tokenName;
     float tokenDataLenght;
     struct _Token *tokenParent;
     Line *line;
 } Token;
+
+typedef struct _SymbolList {
+    int tokenCount;
+    List tokens;
+} SymbolList;
 
 void lexical_analysis(File *file);
 
