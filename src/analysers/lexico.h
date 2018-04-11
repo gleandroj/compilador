@@ -6,6 +6,19 @@
 extern char * const reserved_words[];
 
 typedef enum {
+    principal_index, //0
+    funcao_index,    //1
+    leitura_index,   //2
+    escrita_index,   //3
+    se_index,        //4
+    senao_index,     //5
+    para_index,      //6
+    inteiro_index,   //7
+    caractere_index, //8
+    decimal_index    //9
+} ReservedWordsIndex ;
+
+typedef enum {
     nao_identificado = -1,
     variavel = 0,
     funcao = 1,
@@ -16,6 +29,7 @@ typedef enum {
 } TokenType;
 
 typedef enum {
+    vazio,
     inteiro,
     caractere,
     decimal
@@ -24,11 +38,12 @@ typedef enum {
 typedef struct _Token {
     TokenType type;
     TokenDataType dataType;
-    char* tokenValue;
-    char *tokenName;
-    float tokenDataLenght;
-    struct _Token *tokenParent;
-    Line *line;
+    char* value;
+    char *name;
+    float dataLenght;
+    struct _Token *parent;
+    int lineIndex;
+    int startCharIndex;
 } Token;
 
 typedef struct _SymbolList {

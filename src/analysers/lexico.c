@@ -7,91 +7,137 @@
 #include "../util/helpers.h"
 #include "../util/log.h"
 
-#define BREAK_LINE '\n'
+#define BREAK_LINE 10
 
 char const *reserverd_words[] = {
-    "principal",
-    "funcao",
-    "leitura",
-    "escrita",
-    "se",
-    "senao",
-    "para",
-    "inteiro",
-    "caractere",
-    "decimal"
+    "principal", //0
+    "funcao",    //1
+    "leitura",   //2
+    "escrita",   //3
+    "se",        //4
+    "senao",     //5
+    "para",      //6
+    "inteiro",   //7
+    "caractere", //8
+    "decimal"    //9
 };
 
 File *_file = NULL;
+Token *lastToken = NULL;
+Token *scopeToken = NULL;
+int charIndex = 0;
+int lineIndex = 0;
 
-void verifyPossibleTokenType(char *c, char *possibleWord, TokenType *possibleType)
+int abriuChaves = 0;
+int abriuAspas = 0;
+int abriuParen = 0;
+
+void verifyPossibleTokenType(char *c, ReservedWordsIndex *possibleWordIndex, TokenType *possibleType)
 {
-    if (isspace(*c) || ((int)*c) == BREAK_LINE)
+    if (((int)*c) == (int)reserverd_words[0][0])
     {
-        //printf("Ignored char %c\n", isspace(*c) ? '_' : (*c == BREAK_LINE ? '^' : *c));
-        c++;
-        return verifyPossibleTokenType(c, possibleWord, possibleType);
-    }
-    else if (*c == reserverd_words[0][0])
-    {
-        possibleWord = (char *)&reserverd_words[0][0];
+        *possibleWordIndex = principal_index;
         *possibleType = principal;
         return;
     }
-    else if (*c == reserverd_words[1][0])
+    else if (((int)*c) == (int)reserverd_words[1][0])
     {
-        possibleWord = (char *)&reserverd_words[1][0];
+        *possibleWordIndex = funcao_index;
         *possibleType = funcao;
         return;
     }
-    else if (*c == reserverd_words[2][0])
+    else if (((int)*c) == (int)reserverd_words[2][0])
     {
-        possibleWord = (char *)&reserverd_words[2][0];
+        *possibleWordIndex = leitura_index;
         *possibleType = funcao_reservada;
         return;
     }
-    else if (*c == reserverd_words[3][0])
+    else if (((int)*c) == (int)reserverd_words[3][0])
     {
-        possibleWord = (char *)&reserverd_words[3][0];
+        *possibleWordIndex = escrita_index;
         *possibleType = funcao_reservada;
         return;
     }
-    else if (*c == reserverd_words[4][0])
+    else if (((int)*c) == (int)reserverd_words[4][0])
     {
-        possibleWord = (char *)&reserverd_words[4][0];
+        *possibleWordIndex = se_index;
         *possibleType = palavra_reservada;
         return;
     }
-    else if (*c == reserverd_words[5][0])
+    else if (((int)*c) == (int)reserverd_words[5][0])
     {
-        possibleWord = (char *)&reserverd_words[5][0];
+        *possibleWordIndex = senao_index;
         *possibleType = palavra_reservada;
         return;
     }
-    else if (*c == reserverd_words[6][0])
+    else if (((int)*c) == (int)reserverd_words[6][0])
     {
-        possibleWord = (char *)&reserverd_words[6][0];
+        *possibleWordIndex = para_index;
         *possibleType = palavra_reservada;
         return;
     }
-    else if (*c == reserverd_words[7][0])
+    else if (((int)*c) == (int)reserverd_words[7][0])
     {
-        possibleWord = (char *)&reserverd_words[7][0];
-        *possibleType = variavel | argumento;
+        *possibleWordIndex = inteiro_index;
+        *possibleType = variavel;
         return;
     }
-    else if (*c == reserverd_words[8][0])
+    else if (((int)*c) == (int)reserverd_words[8][0])
     {
-        possibleWord = (char *)&reserverd_words[8][0];
-        *possibleType = variavel | argumento;
+        *possibleWordIndex = caractere_index;
+        *possibleType = variavel;
         return;
     }
-    else if (*c == reserverd_words[9][0])
+    else if (((int)*c) == (int)reserverd_words[9][0])
     {
-        possibleWord = (char *)&reserverd_words[9][0];
-        *possibleType = variavel | argumento;
+        *possibleWordIndex = decimal_index;
+        *possibleType = variavel;
         return;
     }
+}
+
+char nextChar()
+{
+    char c = file_get_char_at(_file, charIndex++);
+    if ((int)c == 10)
+        lineIndex++;
+    if ((int)c == 0)
+        return nextChar();
+    return c;
+}
+
+char nextCharIgnoreSpaceAndBreakLine()
+{
+    char c = nextChar();
+    if ((int)c == 32 || (int)c == 10)
+        return nextCharIgnoreSpaceAndBreakLine();
+    return c;
+}
+
+char nextCharIgnoreSpace()
+{
+    char c = nextChar();
+    if ((int)c == 32)
+        return nextCharIgnoreSpace();
+    return c;
+}
+
+void setToken(Token *token,
+              char *name,
+              TokenType type,
+              TokenDataType dataType,
+              Token *parent,
+              char *tokenValue,
+              float dataLenght,
+              int lineIndex,
+              int startTokenIndex)
+{
+    token->name = name;
+    token->parent = parent;
+    token->value = tokenValue;
+    token->dataLenght = dataLenght;
+    token->startCharIndex = startTokenIndex;
+    token->lineIndex = lineIndex;
 }
 
 Token *nextToken()
@@ -101,18 +147,81 @@ Token *nextToken()
         return NULL;
     }
 
-    int lineIndex = 0, charPosition = 0;
-    Line *line;
-    char *c, *possibleWord = NULL;
-    TokenType possibleType = nao_identificado;
-    while ((line = file_get_line(_file, lineIndex)) != NULL)
+    Token *token = (Token *)allocate_memory(sizeof(Token));
+
+    while ((charIndex + 1) < _file->charactersCount)
     {
-        c = line->lineText;
-        verifyPossibleTokenType(c, possibleWord, &possibleType);
+        TokenType possibleType = nao_identificado;
+        ReservedWordsIndex pwi = -1;
+        char c = nextCharIgnoreSpaceAndBreakLine();
+        int ascii = (int)c;
 
+        verifyPossibleTokenType(&c, &pwi, &possibleType);
 
-        lineIndex++;
-        possibleType = nao_identificado;
+        if (pwi != -1 && possibleType != nao_identificado)
+        {
+            int ci = 0, pwilen = strlen(reserverd_words[pwi]) - 1, startTokenIndex = charIndex, tokenLineIndex = lineIndex;
+            while (ci < pwilen)
+            {
+                ci++;
+                c = nextChar();
+                ascii = (int)c;
+                if (ascii != ((int)reserverd_words[pwi][ci]))
+                {
+                    log_error("Caracter não identificado na linha: %d caracter: %c.\n", lineIndex + 1, c);
+                }
+            }
+
+            if (possibleType == principal)
+            {
+                if ((int)(c = nextCharIgnoreSpaceAndBreakLine()) != 40 || ((int)(c = nextCharIgnoreSpace())) != 41)
+                { //()
+                    log_error("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
+                }
+
+                if ((int)(c = nextCharIgnoreSpaceAndBreakLine()) != 123)
+                { //{
+                    log_error("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
+                }
+
+                setToken(token, (char *)reserverd_words[pwi], principal, vazio, NULL, NULL, 0, lineIndex, startTokenIndex);
+                scopeToken = token;
+                return token;
+            }
+
+            if (possibleType == variavel)
+            {
+                if ((int)(c = nextChar()) != 32) 
+                {//space
+                    log_error("Declaração de variável incorreta na linha: %d.\n", lineIndex + 1, c);
+                }
+
+                if ((int)(c = nextCharIgnoreSpace()) != 38)
+                { //&
+                    log_error("Declaração de variável incorreta na linha: %d, caracter esperado: \'&\' .\n", lineIndex + 1);
+                }
+
+                ascii = (int)(c = nextChar());
+                if (ascii < 97 || ascii > 122)
+                { //a..z
+                    log_error("Declaração de variável incorreta na linha: %d, caracteres esperados: a..z .\n", lineIndex + 1);
+                }
+
+                do
+                {
+                    ascii = (int)nextChar();
+                    //a..z A..Z 0..9
+                } while ((ascii >= 97 && ascii <= 122) || (ascii >= 65 && ascii <= 90) || (ascii >= 48 && ascii <= 57));
+
+                if (pwi == caractere_index || pwi == decimal_index)
+                {
+                    if (ascii != (int)nextChar())
+                    {
+                        log_error("Declaração de variável incorreta na linha: %d, caracter esperado: \'[\' .\n", lineIndex + 1);
+                    }
+                }
+            }
+        }
     }
 
     return NULL;
@@ -124,6 +233,7 @@ void lexical_analysis(File *file)
     Token *token = NULL;
     while ((token = nextToken()) != NULL)
     {
+        log_info("Novo token: %s\n", token->name);
     }
 
     log_info("Finalizado analise lexica\n");
