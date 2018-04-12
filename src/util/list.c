@@ -12,6 +12,18 @@ void list_new(List *list, int elementSize, FreeFunction freeFn)
     list->freeFn = freeFn;
 }
 
+void free_element(List *list, ListNode *node){
+    if (list->freeFn)
+    {
+        list->freeFn(node->data);
+    }
+    else
+    {
+        free_memory(node->data);
+    }
+    free_memory(node);
+}
+
 void list_destroy(List *list)
 {
     ListNode *current;
@@ -19,17 +31,7 @@ void list_destroy(List *list)
     {
         current = list->head;
         list->head = current->next;
-
-        if (list->freeFn)
-        {
-            list->freeFn(current->data);
-        }
-        else
-        {
-            free_memory(current->data);
-        }
-
-        free_memory(current);
+        free_element(list, current);
     }
 }
 
@@ -51,6 +53,31 @@ void list_append(List *list, void *element)
     }
 
     list->logicalLength++;
+}
+
+
+void list_pop(List *list)
+{
+    if (list->logicalLength == 0)
+    {
+        return;
+    }
+    else if(list->logicalLength == 1){
+        free_element(list, list->head);
+        list->head = list->tail = NULL;
+    }
+    else
+    {
+        ListNode * nodeToPop = list->tail, *node = list->head;
+        while (node != NULL && node != nodeToPop)
+        {
+            node = node->next;
+        }
+        free_element(list, nodeToPop);
+        node->next = NULL;
+        list->tail = node;
+    }
+    list->logicalLength--;
 }
 
 void list_for_each(List *list, ListIterator iterator)

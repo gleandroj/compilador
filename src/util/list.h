@@ -25,6 +25,7 @@ typedef struct
 void list_new(List *list, int elementSize, FreeFunction freeFn);
 void list_destroy(List *list);
 void list_append(List *list, void *element);
+void list_pop(List *list);
 void list_for_each(List *list, ListIterator iterator);
 
 #endif

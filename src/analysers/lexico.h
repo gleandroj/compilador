@@ -5,6 +5,8 @@
 
 extern char * const reserved_words[];
 
+#define MAX_VARIABLE_NAME_LEN 100
+
 typedef enum {
     principal_index, //0
     funcao_index,    //1
@@ -38,13 +40,18 @@ typedef enum {
 typedef struct _Token {
     TokenType type;
     TokenDataType dataType;
-    char* value;
+    char *value;
     char *name;
-    float dataLenght;
+    char *dataLenght;
     struct _Token *parent;
     int lineIndex;
     int startCharIndex;
 } Token;
+
+typedef struct _pilhaItem {
+    int charIndex;
+    int ascii;
+} PilhaItem;
 
 typedef struct _SymbolList {
     int tokenCount;
