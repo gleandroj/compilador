@@ -271,7 +271,7 @@ Token *nextToken()
                 { //{
                     log_error("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", tokenLineIndex + 1, c);
                 }
-                abriuChaves();
+                //abriuChaves();
 
                 setToken(token, (char *)reserverd_words[pwi], principal, vazio, NULL, NULL, NULL, tokenLineIndex, startTokenIndex);
                 scopeToken = token;
@@ -303,7 +303,7 @@ Token *nextToken()
                     Booleano leuPonto = FALSE;
                     char buffer[MAX_VARIABLE_NAME_LEN];
                     int len = 0;
-
+                    //[(0..9)(0..9)*(.)?(0..9)*]
                     while ((ascii = (int)(c = nextChar())) && (ascii >= 48 && ascii <= 57) || (pwi == decimal_index && ascii == 46)){
                         if(pwi == caractere_index && (ascii < 48 || ascii > 57)){
                             log_error("Declaração de variável incorreta na linha: %d, caracter: \'%c\' .\n", tokenLineIndex + 1, c);
@@ -313,8 +313,8 @@ Token *nextToken()
                         buffer[len] = c;
                         len++;
                     }
-
-                    if(ascii != 93){
+                    
+                    if(ascii != 93){//]
                         log_error("Declaração de variável incorreta na linha: %d, caracter esperado: \']\' .\n", tokenLineIndex + 1);
                     }
 
