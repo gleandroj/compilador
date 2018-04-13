@@ -25,12 +25,13 @@ char const *reserverd_words[] = {
 };
 
 File *_file = NULL;
-Token *lastToken = NULL;
-Token *scopeToken = NULL;
-List chavesPilha;
+Token *lastToken = NULL,
+      *scopeToken = NULL;
+//List chavesPilha;
 
-int charIndex = 0;
-int lineIndex = 0;
+int charIndex = 0,
+    lineIndex = 0,
+    chavesCount = 0;
 
 Booleano leuVirgula = FALSE;
 TokenType possibleType = nao_identificado;
@@ -50,15 +51,16 @@ Booleano printPilha(void *data)
 
 void abriuChaves()
 {
-    PilhaItem *item = (PilhaItem *)allocate_memory(sizeof(PilhaItem));
-    item->ascii = 123;
-    item->charIndex = charIndex;
-    list_append(&chavesPilha, item);
+    // PilhaItem *item = (PilhaItem *)allocate_memory(sizeof(PilhaItem));
+    // item->ascii = 123;
+    // item->charIndex = charIndex;
+    // list_append(&chavesPilha, item);
+    chavesCount++;
 }
 
 void fechouChaves()
 {
-    list_pop(&chavesPilha);
+    chavesCount--;
 }
 
 void verifyPossibleTokenType(char *c, ReservedWordsIndex *possibleWordIndex, TokenType *possibleType)
@@ -175,9 +177,9 @@ void setToken(Token *token,
 
 void imprimePilhaChaves()
 {
-    printf("Pilha de chaves:[");
-    list_for_each(&chavesPilha, printPilha);
-    printf("]\n");
+    // printf("Pilha de chaves:[");
+    // list_for_each(&chavesPilha, printPilha);
+    // printf("]\n");
 }
 
 char *validaVariavel(char *c, int *ascii)
@@ -320,6 +322,7 @@ Token *nextToken()
                 { //{
                     log_error("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", tokenLineIndex + 1, c);
                 }
+                abriuChaves();
                 setToken(token, (char *)reserverd_words[pwi], principal, vazio, NULL, NULL, NULL, tokenLineIndex, startTokenIndex);
                 scopeToken = token;
                 return token;
@@ -338,29 +341,42 @@ Token *nextToken()
                 if (ascii != 40) //(
                     log_error("Declaração/chamada de função incorreta na linha: %d, caracter esperado \'(\'.\n", tokenLineIndex + 1);
 
-                if ((ascii = (int)(c = nextCharIgnoreSpace())) != 41)//)
+                if ((ascii = (int)(c = nextCharIgnoreSpace())) != 41) //)
                 {
-                    ReservedWordsIndex oldIndex = pwi;
-                    TokenType oldType = possibleType;
-                    verifyPossibleTokenType(&c, &pwi, &possibleType);
-
-                    if (possibleType == nao_identificado && ascii == 38) //&, chamada de função
-                    {//TODO: Verificar se já foi declarada, se não foi varrer o código novamente até achar e voltar para esse ponto
+                    if (ascii == 38) //&, chamada de função com argumentos
+                    {//TODO: Verificar se já foi declarada, se não foi varrer o código até achar e voltar para esse ponto
                         charIndex--;
                         do
                         {
                             char *varname = validaVariavel(&c, &ascii);
                             char *dataLenght = validaDataLenght(&c, &ascii);
-                            //Variáveis da chamada da função, verificar se foram declaras;
-
+                            //Variáveis da chamada da função
+                            //TODO: verificar se foram declaras
                         } while (ascii == 44); //,
 
                         ascii = ascii == 10 ? (int)(c = nextCharIgnoreSpace()) : ascii;
 
-                        if(ascii != 41) //)
+                        if (ascii != 41) //)
                             log_error("Chamada de função incorreta na linha: %d, caracter esperado \')\'.\n", tokenLineIndex + 1);
-                        if((ascii = (int)(c = nextChar())) != 59)//;
+                        if ((ascii = (int)(c = nextChar())) != 59) //;
                             log_error("Chamada de função incorreta na linha: %d, caracter esperado \';\'.\n", tokenLineIndex + 1);
+                    }
+                    else
+                    {//Declaração de função com argumentos
+                        do
+                        {
+                            verifyPossibleTokenType(&c, &pwi, &possibleType);
+                            validaPalavraReservada(&c, tokenLineIndex);
+
+                            if (ascii = (int)(c = nextChar()) != 32) //space
+                                log_error("Declaração de argumento incorreto na linha: %d.\n", lineIndex + 1, c);
+
+                            char *argname = validaVariavel(&c, &ascii);
+                            char *dataLenght = validaDataLenght(&c, &ascii);
+                            
+                            printf("Arg: %s\n", argname);
+
+                        } while (ascii == 44 && (ascii = (int)(c = nextCharIgnoreSpace()))); //,
                     }
                 }
             }
@@ -388,6 +404,11 @@ Token *nextToken()
                 }
             }
         }
+        else if (ascii == 125) //}
+        {
+            scopeToken = NULL;
+            fechouChaves();
+        }
     }
 
     return NULL;
@@ -396,12 +417,10 @@ Token *nextToken()
 void lexical_analysis(File *file)
 {
     _file = file;
-    list_new(&chavesPilha, sizeof(PilhaItem), free_pilha);
     Token *token = NULL;
     while ((token = nextToken()) != NULL)
     {
         log_info("Novo token: %s\n", token->name);
     }
-    list_destroy(&chavesPilha);
     log_info("Finalizado analise lexica\n");
 }
