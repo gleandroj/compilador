@@ -286,6 +286,11 @@ char *validaDataLenght(char *c, int *ascii)
     return NULL;
 }
 
+char *validaExpressao(char *c, int *ascii){
+    //TODO: Validar expressão
+    return NULL;
+}
+
 Token *nextToken()
 {
     if (_file == NULL)
@@ -344,7 +349,7 @@ Token *nextToken()
                 if ((ascii = (int)(c = nextCharIgnoreSpace())) != 41) //)
                 {
                     if (ascii == 38) //&, chamada de função com argumentos
-                    {//TODO: Verificar se já foi declarada, se não foi varrer o código até achar e voltar para esse ponto
+                    {                //TODO: Verificar se já foi declarada, se não foi varrer o código até achar e voltar para esse ponto
                         charIndex--;
                         do
                         {
@@ -362,7 +367,9 @@ Token *nextToken()
                             log_error("Chamada de função incorreta na linha: %d, caracter esperado \';\'.\n", tokenLineIndex + 1);
                     }
                     else
-                    {//Declaração de função com argumentos
+                    { //Declaração de função com argumentos
+                        setToken(token, funname, funcao, vazio, NULL, NULL, NULL, tokenLineIndex, startTokenIndex);
+                        scopeToken = token;
                         do
                         {
                             verifyPossibleTokenType(&c, &pwi, &possibleType);
@@ -373,17 +380,27 @@ Token *nextToken()
 
                             char *argname = validaVariavel(&c, &ascii);
                             char *dataLenght = validaDataLenght(&c, &ascii);
-                            
+
                             printf("Arg: %s\n", argname);
 
                         } while (ascii == 44 && (ascii = (int)(c = nextCharIgnoreSpace()))); //,
+
+                        if (ascii != 41) //)
+                            log_error("Declaração de função incorreta na linha: %d, caracter esperado \')\'.\n", tokenLineIndex + 1);
+
+                        if ((int)(c = nextCharIgnoreSpaceAndBreakLine()) != 123)
+                        { //{
+                            log_error("Declaração de função incorreta na linha: %d, caracter esperado \'{\'.\n", tokenLineIndex + 1, c);
+                        }
+                        abriuChaves();
+                        return token;
                     }
                 }
             }
             else if (possibleType == variavel) //valida declaração de variável
             {
                 if (!leuVirgula && (ascii = (int)(c = nextChar())) != 32) //space
-                    log_error("Declaração de variável incorreta na linha: %d.\n", lineIndex + 1, c);
+                    log_error("Declaração de variável incorreta na linha: %d.\n", tokenLineIndex, c);
 
                 char *varname = validaVariavel(&c, &ascii);
                 char *dataLenght = validaDataLenght(&c, &ascii);
@@ -394,13 +411,17 @@ Token *nextToken()
                     setToken(token, varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), scopeToken, NULL, dataLenght, tokenLineIndex, startTokenIndex);
                     return token;
                 }
-
-                leuVirgula = FALSE;
-
-                if (ascii == 59)
+                else if (ascii == 59)
                 { //; fim da declaração
+                    leuVirgula = FALSE;
                     setToken(token, varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), scopeToken, NULL, dataLenght, tokenLineIndex, startTokenIndex);
                     return token;
+                }else if(ascii == 61 && leuVirgula)
+                {
+                    log_error("Declaração de variável incorreta, não é permitido atribuição com multiplas variáveis, linha: %d", tokenLineIndex);
+                }else if(ascii == 61){
+                    char* dataValue = validaExpressao(&c, &ascii);
+                    //TODO Finalizar com ;
                 }
             }
         }
@@ -408,6 +429,13 @@ Token *nextToken()
         {
             scopeToken = NULL;
             fechouChaves();
+        }
+        else if(ascii == 38)//&
+        {
+            charIndex--;
+            char *varname = validaVariavel(&c, &ascii);
+            printf("Valida utilização de variável: %s.\n", varname);
+            exit(1);
         }
     }
 
