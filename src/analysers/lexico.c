@@ -63,6 +63,9 @@ void fechouChaves()
 
 void verifyPossibleTokenType(char *c, ReservedWordsIndex *possibleWordIndex, TokenType *possibleType)
 {
+    *possibleWordIndex = -1;
+    *possibleType = nao_identificado;
+
     if (((int)*c) == (int)reserverd_words[0][0])
     {
         *possibleWordIndex = principal_index;
@@ -181,31 +184,45 @@ char *validaVariavel(char *c, int *ascii)
 {
     int varlen = 2;
     char buffer[MAX_VARIABLE_NAME_LEN];
-    Booleano read = TRUE;
+
     if ((*ascii = (int)(*c = nextCharIgnoreSpace())) != 38)
     { //&
         log_error("Declaração de variável incorreta na linha: %d, caracter esperado: \'&\' .\n", lineIndex + 1);
     }
     buffer[0] = *c;
-    *ascii = (int)(*c = nextChar());
-    buffer[1] = *c;
+    *ascii = (int)(buffer[1] = (*c = nextChar()));
     if (*ascii < 97 || *ascii > 122)
     { //a..z
         log_error("Declaração de variável incorreta na linha: %d, caracteres esperados: a..z .\n", lineIndex + 1);
     }
     //a..z A..Z 0..9
-    while (read)
+    while ((*ascii = (int)(*c = nextChar())) && ((*ascii >= 97 && *ascii <= 122) || (*ascii >= 65 && *ascii <= 90) || (*ascii >= 48 && *ascii <= 57)))
     {
-        *ascii = (int)(*c = nextChar());
-        if ((*ascii >= 97 && *ascii <= 122) || (*ascii >= 65 && *ascii <= 90) || (*ascii >= 48 && *ascii <= 57) || (*ascii == -1))
-        {
-            buffer[varlen] = *c;
-            varlen++;
-        }
-        else
-        {
-            read = FALSE;
-        }
+        buffer[varlen] = *c;
+        varlen++;
+    }
+
+    char *varname = allocate_memory(sizeof(char) * varlen);
+    memcpy(varname, buffer, varlen);
+    varname[varlen] = '\0';
+    return varname;
+}
+
+char *validaFuncao(char *c, int *ascii)
+{
+    int varlen = 1;
+    char buffer[MAX_VARIABLE_NAME_LEN];
+
+    if ((*ascii = (int)(*c = nextChar())) != 102)
+    { //f
+        log_error("Declaração/chamada de função incorreta na linha: %d, caracter esperado: \'f\' .\n", lineIndex + 1);
+    }
+    buffer[0] = *c;
+    //a..z A..Z 0..9
+    while ((*ascii = (int)(*c = nextChar())) && ((*ascii >= 97 && *ascii <= 122) || (*ascii >= 65 && *ascii <= 90) || (*ascii >= 48 && *ascii <= 57)))
+    {
+        buffer[varlen] = *c;
+        varlen++;
     }
 
     char *varname = allocate_memory(sizeof(char) * varlen);
@@ -229,15 +246,49 @@ void validaPalavraReservada(char *c, int tokenLineIndex)
     } while (ci <= pwilen);
 }
 
+char *validaDataLenght(char *c, int *ascii)
+{
+    if (pwi == caractere_index || pwi == decimal_index)
+    {
+        //TODO: Validar com a professora
+        //Ignore space ex: caractere &teste [];
+        *ascii = *ascii == 10 ? (int)(*c = nextCharIgnoreSpace()) : *ascii;
+        if (*ascii != 91) //[
+            log_error("Declaração de variável incorreta na linha: %d, caracter esperado: \'[\' .\n", lineIndex + 1);
+
+        char buffer[MAX_VARIABLE_NAME_LEN];
+        int len = 0;
+
+        //[(0..9)(0..9)*(.)?(0..9)*]
+        while ((*ascii = (int)(*c = nextChar())) && (*ascii >= 48 && *ascii <= 57) || (pwi == decimal_index && *ascii == 46))
+        {
+            if (pwi == caractere_index && (*ascii < 48 || *ascii > 57))
+                log_error("Declaração de variável incorreta na linha: %d, caracter: \'%c\' .\n", lineIndex + 1, *c);
+            else if (pwi == decimal_index && ((*ascii < 48 || *ascii > 57) || *ascii != 46))
+                log_error("Declaração de variável incorreta na linha: %d, caracter: \'%c\' .\n", lineIndex + 1, *c);
+
+            buffer[len] = *c;
+            len++;
+        }
+
+        if (*ascii != 93) //]
+            log_error("Declaração de variável incorreta na linha: %d, caracter esperado: \']\' .\n", lineIndex + 1);
+
+        char *dataLenght = (char *)allocate_memory(sizeof(char) * len);
+        memcpy(dataLenght, buffer, len);
+        dataLenght[len] = '\0';
+        *ascii = (int)(*c = nextCharIgnoreSpace());
+        return dataLenght;
+    }
+
+    return NULL;
+}
+
 Token *nextToken()
 {
     if (_file == NULL)
-    {
         return NULL;
-    }
-
     Token *token = (Token *)allocate_memory(sizeof(Token));
-
     while ((charIndex + 1) < _file->charactersCount)
     {
         char c;
@@ -246,14 +297,12 @@ Token *nextToken()
         if (!leuVirgula)
         {
             ascii = (int)(c = nextCharIgnoreSpaceAndBreakLine());
-            possibleType = nao_identificado;
-            pwi = -1;
             verifyPossibleTokenType(&c, &pwi, &possibleType);
         }
 
-        int pwilen = strlen(reserverd_words[pwi]) - 1, startTokenIndex = charIndex, tokenLineIndex = lineIndex;
+        int startTokenIndex = charIndex, tokenLineIndex = lineIndex;
 
-        if (pwi != -1 && possibleType != nao_identificado)
+        if (possibleType != nao_identificado)
         {
             //valida palavra reservada
             if (!leuVirgula)
@@ -271,59 +320,57 @@ Token *nextToken()
                 { //{
                     log_error("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", tokenLineIndex + 1, c);
                 }
-                //abriuChaves();
-
                 setToken(token, (char *)reserverd_words[pwi], principal, vazio, NULL, NULL, NULL, tokenLineIndex, startTokenIndex);
                 scopeToken = token;
                 return token;
             }
-
-            //valida declaração de variável
-            if (possibleType == variavel)
+            else if (possibleType == funcao) //valida declaração/chamada de funcao
             {
-                if (!leuVirgula && (int)(c = nextChar()) != 32)
+                if ((ascii = (int)(c = nextChar())) != 32)
                 { //space
-                    log_error("Declaração de variável incorreta na linha: %d.\n", tokenLineIndex + 1, c);
+                    log_error("Declaração/chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
                 }
+                char *funname;
+                funname = validaFuncao(&c, &ascii);
+                //TODO: Validar com a professora
+                //Ignore space ex: funcao fsoma ();
+                ascii = ascii == 10 ? (int)(c = nextCharIgnoreSpace()) : ascii;
+                if (ascii != 40) //(
+                    log_error("Declaração/chamada de função incorreta na linha: %d, caracter esperado \'(\'.\n", tokenLineIndex + 1);
 
-                char *varname;
-                char *dataLenght = NULL;
-
-                varname = validaVariavel(&c, &ascii);
-
-                //printf("Variável encontrada: %s\n", varname);
-                if (pwi == caractere_index || pwi == decimal_index)
+                if ((ascii = (int)(c = nextCharIgnoreSpace())) != 41)//)
                 {
-                    //Ignore space ex: caractere &teste [];
-                    ascii = ascii == 10 ? (int)(c = nextCharIgnoreSpace()) : ascii;
-                    if (ascii != 91) //[
-                    {
-                        log_error("Declaração de variável incorreta na linha: %d, caracter esperado: \'[\' .\n", tokenLineIndex + 1);
-                    }
-                    Booleano leuPonto = FALSE;
-                    char buffer[MAX_VARIABLE_NAME_LEN];
-                    int len = 0;
-                    //[(0..9)(0..9)*(.)?(0..9)*]
-                    while ((ascii = (int)(c = nextChar())) && (ascii >= 48 && ascii <= 57) || (pwi == decimal_index && ascii == 46)){
-                        if(pwi == caractere_index && (ascii < 48 || ascii > 57)){
-                            log_error("Declaração de variável incorreta na linha: %d, caracter: \'%c\' .\n", tokenLineIndex + 1, c);
-                        }else if(pwi == decimal_index && ((ascii < 48 || ascii > 57) || ascii != 46)){
-                            log_error("Declaração de variável incorreta na linha: %d, caracter: \'%c\' .\n", tokenLineIndex + 1, c);
-                        }
-                        buffer[len] = c;
-                        len++;
-                    }
-                    
-                    if(ascii != 93){//]
-                        log_error("Declaração de variável incorreta na linha: %d, caracter esperado: \']\' .\n", tokenLineIndex + 1);
-                    }
+                    ReservedWordsIndex oldIndex = pwi;
+                    TokenType oldType = possibleType;
+                    verifyPossibleTokenType(&c, &pwi, &possibleType);
 
-                    dataLenght = (char*)allocate_memory(sizeof(char) * len);
-                    memcpy(dataLenght, buffer, len);
-                    dataLenght[len] = '\0';
+                    if (possibleType == nao_identificado && ascii == 38) //&, chamada de função
+                    {//TODO: Verificar se já foi declarada, se não foi varrer o código novamente até achar e voltar para esse ponto
+                        charIndex--;
+                        do
+                        {
+                            char *varname = validaVariavel(&c, &ascii);
+                            char *dataLenght = validaDataLenght(&c, &ascii);
+                            //Variáveis da chamada da função, verificar se foram declaras;
 
-                    ascii = (int)(c = nextCharIgnoreSpace());
+                        } while (ascii == 44); //,
+
+                        ascii = ascii == 10 ? (int)(c = nextCharIgnoreSpace()) : ascii;
+
+                        if(ascii != 41) //)
+                            log_error("Chamada de função incorreta na linha: %d, caracter esperado \')\'.\n", tokenLineIndex + 1);
+                        if((ascii = (int)(c = nextChar())) != 59)//;
+                            log_error("Chamada de função incorreta na linha: %d, caracter esperado \';\'.\n", tokenLineIndex + 1);
+                    }
                 }
+            }
+            else if (possibleType == variavel) //valida declaração de variável
+            {
+                if (!leuVirgula && (ascii = (int)(c = nextChar())) != 32) //space
+                    log_error("Declaração de variável incorreta na linha: %d.\n", lineIndex + 1, c);
+
+                char *varname = validaVariavel(&c, &ascii);
+                char *dataLenght = validaDataLenght(&c, &ascii);
 
                 if (ascii == 44) //,
                 {
@@ -358,162 +405,3 @@ void lexical_analysis(File *file)
     list_destroy(&chavesPilha);
     log_info("Finalizado analise lexica\n");
 }
-
-// void lexical_analysis(File *file)
-// {
-//     int lineIndex = 0, charPosition = 0;
-//     char *c, *possible_word = NULL;
-//     TokenType possible_token_type;
-//     for (lineIndex = 0; lineIndex < file->linesCount; lineIndex++)
-//     {
-//         Line *line = file_get_line(file, lineIndex);
-//         for (c = line->lineText; *c; c++, charPosition++)
-//         {
-//             if (possible_word != NULL)
-//             {
-//                 int j, k, read_len = 2, len = strlen(possible_word);
-//                 for (j = 1; j < len; j++, c++, charPosition++, read_len++)
-//                 {
-
-//                     printf("Read len %d, Possible word len %d, type %d, char: %c, \n", read_len, len, possible_token_type, isspace(*c) ? 's' : *c);
-
-//                     if ((possible_token_type == funcao ||
-//                          possible_token_type == principal ||
-//                          possible_token_type == palavra_reservada) &&
-//                         (*c == '(' || *c == ')'))
-//                     {
-//                         continue;
-//                     }
-//                     else if ((possible_token_type == funcao ||
-//                          possible_token_type == principal ||
-//                          possible_token_type == palavra_reservada) &&
-//                         (*c == '{' || *c == '}'))
-//                     {
-//                         printf("{} fim \n");
-//                         break;
-//                     }
-//                     else if ((possible_token_type == variavel ||
-//                               possible_token_type == funcao_reservada) &&
-//                              *c == ';')
-//                     {
-//                         printf("; fim \n");
-//                         break;
-//                     }
-
-//                     if ((possible_token_type == variavel | argumento) && (char)possible_word[0] == 'c' && (char)possible_word[0] == 'd' && (*c == '['))
-//                     {
-//                         printf("[ fim \n");
-//                         Booleano done = FALSE;
-//                         do
-//                         {
-//                             c++;
-//                             if (!isalnum(*c))
-//                             {
-//                                 log_error("Unexpected char at line %d char %c\n", lineIndex + 1, *c);
-//                             }
-//                             if (*c == ']')
-//                             {
-//                                 done = TRUE;
-//                             }
-//                         } while (!done);
-//                     }
-
-//                     if (len == read_len && isspace(*c) && (possible_word[0] != 'c' || possible_word[0]) != 'd')
-//                     {
-//                         printf("espaço fim \n");
-//                         continue;
-//                     }
-
-//                     // || *c == '}' || *c == ';'
-
-//                     if (*c != (char)possible_word[j])
-//                     {
-//                         log_error("Unexpected char at line %d char %c\n", lineIndex + 1, *c);
-//                     }
-//                 }
-//                 printf("Nenhuma condição\n");
-//                 possible_word = NULL;
-//                 printf("Reiniciando..\n");
-//             }
-
-//             if (isspace(*c) || ((int)*c) == BREAK_LINE)
-//             {
-//                 printf("Ignored char %c\n", isspace(*c) ? '_' : (*c == BREAK_LINE ? '^' : *c));
-//                 continue;
-//             }
-//             else if (*c == reserverd_words[0][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[0][0];
-//                 possible_token_type = principal;
-//             }
-//             else if (*c == reserverd_words[1][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[1][0];
-//                 possible_token_type = funcao;
-//             }
-//             else if (*c == reserverd_words[2][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[2][0];
-//                 possible_token_type = funcao_reservada;
-//             }
-//             else if (*c == reserverd_words[3][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[3][0];
-//                 possible_token_type = funcao_reservada;
-//             }
-//             else if (*c == reserverd_words[4][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[4][0];
-//                 possible_token_type = palavra_reservada;
-//             }
-//             else if (*c == reserverd_words[5][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[5][0];
-//                 possible_token_type = palavra_reservada;
-//             }
-//             else if (*c == reserverd_words[6][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[6][0];
-//                 possible_token_type = palavra_reservada;
-//             }
-//             else if (*c == reserverd_words[7][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[7][0];
-//                 possible_token_type = variavel | argumento;
-//             }
-//             else if (*c == reserverd_words[8][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[8][0];
-//                 possible_token_type = variavel | argumento;
-//             }
-//             else if (*c == reserverd_words[9][0])
-//             {
-//                 possible_word = (char *)&reserverd_words[9][0];
-//                 possible_token_type = variavel | argumento;
-//             }
-
-//             //printf("Possible word: %s\n", possible_word);
-//         }
-//     }
-// }
-
-// void analise_lexica(File *file){
-//     int i, j;
-
-//     symbolList = (SymbolList*)allocate_memory(sizeof(SymbolList));
-//     symbolList->tokenCount = 0;
-//     list_new(&symbolList->tokens, sizeof(Token), free_token);
-
-//     for (i = 0; i < file->linesCount; i++)
-//     {
-//         Line *line = file_get_line(file, i);
-//         for (j = 1; j <= line->charCount; j++)
-//         {
-//             char *test = (char*)allocate_memory(sizeof(char) * (j + 2));
-//             memcpy(test, line->lineText, j);
-//             test[j + 1] = '\0';
-//             printf("%s\n", test);
-//             free_memory(test);
-//         }
-//     }
-// }
