@@ -12,6 +12,7 @@
 #include "util/memory.h"
 #include "util/storage.h"
 #include "util/log.h"
+#include "analysers/lexico.h"
 
 #define FILE_DIR "/home/gabriel/Projects/compilador/resources/arquivo.txt"
 
@@ -24,9 +25,12 @@ int main()
     log_info("Processo finalizado com sucesso...\n");
     log_info("Foram lidas %d linhas e %d caracteres.\n", file->linesCount, file->charactersCount);
 
+    lexical_analysis(file);
+
     //if(!principal_exists) log_error(getMessage(ERROR_MOD_PRI_INEX));
     //else log_info("Modulo principal detectado na linha: %d\n", principal_line);
-    //file_destroy(file);
+    
+    file_destroy(file);
     log_info("Processo de compilação finalizado...\n");
 }
 

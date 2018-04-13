@@ -4,8 +4,8 @@
 #include <regex.h>
 #include "typings.h"
 
-char *substr(char *input, int offset, int len);
+//char *substr(char *input, int offset, int len);
 
-Booleano regex_match(char *input, char *pattern);
+Booleano _is_space(char c);
 
 #endif
