@@ -1,13 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
-
-#include <assert.h>
-#include <string.h>
-#include <regex.h>
-
 #include "util/helpers.h"
-#include "config/constants.h"
 #include "util/typings.h"
 #include "util/memory.h"
 #include "util/storage.h"
@@ -24,7 +15,7 @@ int main()
     log_info("Inicializando leitura do arquivo (%s)\n", FILE_DIR);
     file_read(file, FILE_DIR);
     log_info("Processo finalizado com sucesso...\n");
-    log_info("Foram lidas %d linhas e %d caracteres.\n", file->linesCount, file->charactersCount);
+    log_info("Foram lidos %d caracteres.\n", file->charactersCount);
     
     lexical_analysis(file);
 

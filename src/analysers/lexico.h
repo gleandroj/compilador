@@ -2,6 +2,7 @@
 #define __LEXICO_H
 
 #include "../util/storage.h"
+#include "../util/list.h"
 
 extern char * const reserved_words[];
 

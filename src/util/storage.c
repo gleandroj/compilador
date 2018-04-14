@@ -6,29 +6,13 @@
 
 #include "typings.h"
 #include "log.h"
-#include "list.h"
 #include "memory.h"
 #include "storage.h"
-
-void free_line(void *data)
-{
-    Line *line = (Line *)data;
-    free_memory(line->lineText);
-    free_memory(line);
-}
-
-Line *line_new(size_t textLineSize)
-{
-    Line *line = (Line *)allocate_memory(sizeof(Line));
-    line->lineText = (char *)allocate_memory(textLineSize);
-    return line;
-}
+#include "helpers.h"
 
 void file_read(File *file, char *filename)
 {
-    file->lines = (List *)allocate_memory(sizeof(List));
-    list_new(file->lines, sizeof(Line), free_line);
-
+    file->_file = (char*)allocate_memory(sizeof(char));
     file->charactersCount = 0;
     file->linesCount = 0;
 
@@ -45,17 +29,10 @@ void file_read(File *file, char *filename)
 
     while ((fgets(buffer, BUFFER_SIZE, arq)) != NULL)
     {
-        Line *line = line_new(((bufferlen = strlen(buffer)) + 1) * sizeof(char));
-        line->lineNumber = file->linesCount;
-
-        //bufferlen-- ignore \n char
-        //bufferlen =  (int)buffer[bufferlen - 1] == 10 ? bufferlen-- : bufferlen;
-        copy_memory(buffer, line->lineText, bufferlen * sizeof(char));
-
-        file->charactersCount += line->charCount = bufferlen;
+        bufferlen = strlen(buffer);
+        file->_file = hstrcat(file->_file, buffer);
+        file->charactersCount += bufferlen;
         file->linesCount++;
-
-        list_append(file->lines, line);
     }
 
     free_memory(buffer);
@@ -64,44 +41,13 @@ void file_read(File *file, char *filename)
 
 void file_destroy(File *file)
 {
-    list_destroy(file->lines);
-    free_memory(file->lines);
+    free_memory(file->_file);
     free_memory(file);
 }
 
 char file_get_char_at(File *file, int position)
 {
-    ListNode *node = file->lines->head;
     int charPosition = 0;
     assert(position >= 0 && position < file->charactersCount);
-    while (node != NULL)
-    {
-        Line *line = ((Line *)(node->data));
-        char *c, *lineText = line->lineText;
-        for (c = lineText; *c; c++)
-        {
-            if (charPosition == position)
-            {
-                return *c;
-            }
-            charPosition++;
-        }
-        node = node->next;
-    }
-    return (char)-1;
-}
-
-Line *file_get_line(File *file, int line)
-{
-    ListNode *node = file->lines->head;
-    while (node != NULL)
-    {
-        if (((Line *)(node->data))->lineNumber == line)
-        {
-            return (Line *)node->data;
-        }
-        node = node->next;
-    }
-
-    return NULL;
+    return (char)file->_file[position];
 }

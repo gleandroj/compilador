@@ -4,6 +4,6 @@
 #include <regex.h>
 #include "typings.h"
 
-//char *substr(char *input, int offset, int len);
+char *hstrcat(char *s1, char *s2);
 
 #endif

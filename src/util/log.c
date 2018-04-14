@@ -15,11 +15,9 @@ void _log(char *message, LogLevel level, va_list args)
     {
         case LOG_FATAL:
             sprintf(buffer, "[%s] - %s", "FATAL", message);
-            _abort = TRUE;
             break;
         case LOG_ERROR:
             sprintf(buffer, "[%s] - %s", "ERROR", message);
-            _abort = TRUE;
             break;
         case LOG_WARNING:
             sprintf(buffer, "[%s] - %s", "WARNING", message);
@@ -34,9 +32,6 @@ void _log(char *message, LogLevel level, va_list args)
 
     vprintf(buffer, args);
     free(buffer);
-
-    if (_abort)
-        exit(-1);
 }
 
 void log_fatal(char *message, ...)
@@ -45,6 +40,7 @@ void log_fatal(char *message, ...)
     va_start(args, message);
     _log(message, LOG_FATAL, args);
     va_end(args);
+    exit(-1);
 }
 
 void log_error(char *message, ...)
@@ -53,6 +49,7 @@ void log_error(char *message, ...)
     va_start(args, message);
     _log(message, LOG_ERROR, args);
     va_end(args);
+    exit(-1);
 }
 
 void log_warning(char *message, ...)
