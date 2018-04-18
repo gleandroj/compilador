@@ -40,21 +40,81 @@ ReservedWordsIndex pwi = -1;
 
 SymbolList *symbolList;
 
-void free_all()
+void newSymbolList()
 {
-    list_destroy(&symbolList->tokens);
-    free_memory(symbolList);
+    symbolList = (SymbolList *)allocate_memory(sizeof(SymbolList));
+    symbolList->tokenCount = 0;
+    list_new(&symbolList->tokens, sizeof(Token), NULL);
 }
 
-void free_token(void *pointer)
+Token *pushToken(char *name,
+                 TokenType type,
+                 TokenDataType dataType,
+                 char *value,
+                 char *dataLenght,
+                 int lineIndex,
+                 int startTokenIndex)
 {
-    Token *t = (Token *)pointer;
-    free_memory(t->name);
-    if (t->value != NULL)
-        free_memory(t->value);
-    if (t->dataLenght != NULL)
-        free_memory(t->dataLenght);
-    free_memory(t);
+    Token *token = allocate_memory(sizeof(Token));
+
+    token->name = (char *)allocate_memory(sizeof(char) * (strlen(name) + 1));
+    memcpy(token->name, name, strlen(name) + 1);
+
+    if (value != NULL)
+    {
+        token->value = (char *)allocate_memory(sizeof(char) * (strlen(value) + 1));
+        memcpy(token->value, value, strlen(value) + 1);
+    }
+    else
+    {
+        token->value = NULL;
+    }
+
+    if (dataLenght != NULL)
+    {
+        token->dataLenght = (char *)allocate_memory(sizeof(char) * (strlen(dataLenght) + 1));
+        memcpy(token->dataLenght, dataLenght, strlen(dataLenght) + 1);
+    }
+    else
+    {
+        token->dataLenght = NULL;
+    }
+
+    token->type = type;
+    token->dataType = dataType;
+    token->startCharIndex = startTokenIndex;
+    token->lineIndex = lineIndex;
+    token->parent = scopeToken;
+
+    list_append(&symbolList->tokens, token);
+    symbolList->tokenCount++;
+
+    const char *_ttype = type == argumento ? "(argumento)" : (type == variavel ? "(variavel)" : type == funcao ? "(funcao)" : type == principal ? "(princial)" : type == funcao_reservada ? "funcao_reservada" : "palavra_reservada");
+    const char *_tdatatype = dataType == inteiro ? "inteiro" : (dataType == caractere ? "caractere" : "vazio");
+    log_info("Novo token: %s %s %s %s\n", _ttype, _tdatatype, token->name, dataLenght != NULL ? dataLenght : "");
+
+    return token;
+}
+
+Token *getTokenByName(char *name)
+{
+    List *list = &symbolList->tokens;
+    if (list->logicalLength == 0)
+        return NULL;
+    ListNode *node = list->head;
+    while (node != NULL)
+    {
+        Token *token = (Token *)node->data;
+
+        if (strcmp(name, token->name) == 0)
+        {
+            return token;
+        }
+
+        node = node->next;
+    }
+
+    return NULL;
 }
 
 void log_abort(char *message, ...)
@@ -160,53 +220,6 @@ char nextCharIgnoreSpace()
     if ((int)c == 32)
         return nextCharIgnoreSpace();
     return c;
-}
-
-Token *pushToken(char *name,
-                 TokenType type,
-                 TokenDataType dataType,
-                 char *value,
-                 char *dataLenght,
-                 int lineIndex,
-                 int startTokenIndex)
-{
-    Token *token = allocate_memory(sizeof(Token));
-
-    token->name = (char *)allocate_memory(sizeof(char) * (strlen(name) + 1));
-    memcpy(token->name, name, strlen(name) + 1);
-
-    if (value != NULL)
-    {
-        token->value = (char *)allocate_memory(sizeof(char) * (strlen(value) + 1));
-        memcpy(token->value, value, strlen(value) + 1);
-    }
-    else
-    {
-        token->value = NULL;
-    }
-
-    if (dataLenght != NULL)
-    {
-        token->dataLenght = (char *)allocate_memory(sizeof(char) * (strlen(dataLenght) + 1));
-        memcpy(token->dataLenght, dataLenght, strlen(dataLenght) + 1);
-    }
-    else
-    {
-        token->dataLenght = NULL;
-    }
-
-    token->startCharIndex = startTokenIndex;
-    token->lineIndex = lineIndex;
-    token->parent = scopeToken;
-
-    list_append(&symbolList->tokens, token);
-    symbolList->tokenCount++;
-
-    const char *_ttype = type == argumento ? "(argumento)" : (type == variavel ? "(variavel)" : type == funcao ? "(funcao)" : type == principal ? "(princial)" : type == funcao_reservada ? "funcao_reservada" : "palavra_reservada");
-    const char *_tdatatype = dataType == inteiro ? "inteiro" : (dataType == caractere ? "caractere" : "vazio");
-    log_info("Novo token: %s %s %s %s\n", _ttype, _tdatatype, token->name, dataLenght != NULL ? dataLenght : "");
-
-    return token;
 }
 
 void setScope(Token *scope)
@@ -372,12 +385,8 @@ void readToSemicolonOrBreakLine() //; or \n
 void lexical_analysis(File *file)
 {
     assert((_file = file) != NULL);
+    newSymbolList();
     charIndex = lineIndex = 0;
-
-    symbolList = (SymbolList *)allocate_memory(sizeof(SymbolList));
-    symbolList->tokenCount = 0;
-    list_new(&symbolList->tokens, sizeof(Token), free_token);
-
     while ((charIndex + 1) < _file->charactersCount)
     {
         nextCharIgnoreSpaceAndBreakLine();
@@ -448,7 +457,7 @@ void lexical_analysis(File *file)
                         //Chamada de função com argumentos: OK
                         //TODO: Verificar se a função existe, se não morre o processo.
                         //Varrer o código até achar e voltar para esse ponto
-                        printf("Verificar se afunção %s já foi declarada.\n", funname);
+                        log_info("Verificar se a função %s já foi declarada.\n", funname);
 
                         //Ignora validação da chamada da função, leia até ;
                         readToSemicolonOrBreakLine();
@@ -464,7 +473,7 @@ void lexical_analysis(File *file)
                     //Chamada de função sem argumento: OK.
                     //TODO: Verificar se a função existe, se não morre o processo.
                     //Varrer o código até achar e voltar para esse ponto
-                    printf("Verificar se afunção %s já foi declarada.\n", funname);
+                    log_info("Verificar se a função %s já foi declarada.\n", funname);
                 }
                 else if (ascii == 123) // {
                 {
@@ -522,7 +531,7 @@ void lexical_analysis(File *file)
 
                 readToSemicolonOrBreakLine();
 
-                if (ascii != 59)
+                if (ascii != 59) //
                     log_abort("Finalização de expressão inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
             }
         }
@@ -536,15 +545,19 @@ void lexical_analysis(File *file)
         {
             charIndex--;
             char *varname = checkVariableName();
-            printf("Valida utilização de variável: %s.\n", varname);
 
-            if (ascii == 61) //=
+            Token *token = getTokenByName(varname);
+
+            if (ascii == 61 && token != NULL) //=
             {
-                char *dataValue = checkExpression();
-                printf("Expressão: %s.\n", dataValue);
+                token->value = checkExpression();
+
+                if (ascii != 59) //;
+                    log_abort("Finalização de expressão inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
+
+                log_info("Atribuição para o token: %s = %s.\n", token->name, token->value);
             }
         }
     }
-    //free_all();
     log_info("Finalizado analise lexica\n");
 }

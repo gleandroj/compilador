@@ -9,7 +9,7 @@ principal(){
 funcao fnada(){}
 
 funcao fsoma( inteiro &c, inteiro &d){
-    inteiro &c;
+    inteiro &e;
     &e=&c+&d;
     escrita(&e);
 }
