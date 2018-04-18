@@ -10,6 +10,6 @@ funcao fnada(){}
 
 funcao fsoma( inteiro &c, inteiro &d){
     inteiro &e;
-    &e=&c+&d;
+    &e=&c+&d/100;
     escrita(&e);
 }

@@ -346,7 +346,7 @@ char *checkExpression()
         {
             do
             {
-                buffer[++len] = c;
+                buffer[len++] = c;
             } while ((int)nextChar() >= 48 && ascii <= 57);
         }
         else if (ascii == 34) //"
@@ -354,18 +354,14 @@ char *checkExpression()
         }
 
         if (ascii == 42 || ascii == 43 || ascii == 45 || ascii == 47 || ascii == 94) // * +, -, /, ^
-        {
             buffer[len++] = c;
-        }
         else if (ascii == 40 || ascii == 41) //()
-        {
             buffer[len++] = c;
-        }
 
     } while (ascii != 10 && ascii != 59); //\n ;
 
     if (ascii != 59) //;
-        log_abort("Finalização de expressão inválida, caracter esperado: \';\'");
+        log_abort("Finalização de expressão inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
 
     buffer[len] = '\0';
     char *expressao = (char *)allocate_memory(sizeof(char) * (len + 1));
@@ -551,9 +547,6 @@ void lexical_analysis(File *file)
             if (ascii == 61 && token != NULL) //=
             {
                 token->value = checkExpression();
-
-                if (ascii != 59) //;
-                    log_abort("Finalização de expressão inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
 
                 log_info("Atribuição para o token: %s = %s.\n", token->name, token->value);
             }
