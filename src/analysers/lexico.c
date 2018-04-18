@@ -531,6 +531,18 @@ void lexical_analysis(File *file)
             else
             {
                 log_info("TODO: Validar Para ou Se/Senao.\n");
+                if (pwi == para_index)
+                {
+                    //TODO: Valida para
+                }
+                else if (pwi == se_index)
+                {
+                    //TODO: Valida se
+                }
+                else
+                {
+                    //Senao sem se ??
+                }
             }
         }
         else if (ascii == 125) //}
