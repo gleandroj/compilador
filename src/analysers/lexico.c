@@ -126,73 +126,6 @@ void log_abort(char *message, ...)
     exit(0);
 }
 
-void verifyPossibleTokenType()
-{
-    pwi = -1;
-    possibleType = nao_identificado;
-
-    if (ascii == (int)reserverd_words[0][0])
-    {
-        pwi = principal_index;
-        possibleType = principal;
-        return;
-    }
-    else if (ascii == (int)reserverd_words[1][0])
-    {
-        pwi = funcao_index;
-        possibleType = funcao;
-        return;
-    }
-    else if (ascii == (int)reserverd_words[2][0])
-    {
-        pwi = leitura_index;
-        possibleType = funcao_reservada;
-        return;
-    }
-    else if (ascii == (int)reserverd_words[3][0])
-    {
-        pwi = escrita_index;
-        possibleType = funcao_reservada;
-        return;
-    }
-    else if (ascii == (int)reserverd_words[4][0])
-    {
-        pwi = se_index;
-        possibleType = palavra_reservada;
-        return;
-    }
-    else if (ascii == (int)reserverd_words[5][0])
-    {
-        pwi = senao_index;
-        possibleType = palavra_reservada;
-        return;
-    }
-    else if (ascii == (int)reserverd_words[6][0])
-    {
-        pwi = para_index;
-        possibleType = palavra_reservada;
-        return;
-    }
-    else if (ascii == (int)reserverd_words[7][0])
-    {
-        pwi = inteiro_index;
-        possibleType = variavel;
-        return;
-    }
-    else if (ascii == (int)reserverd_words[8][0])
-    {
-        pwi = caractere_index;
-        possibleType = variavel;
-        return;
-    }
-    else if (ascii == (int)reserverd_words[9][0])
-    {
-        pwi = decimal_index;
-        possibleType = variavel;
-        return;
-    }
-}
-
 char nextChar()
 {
     assert(charIndex < _file->charactersCount);
@@ -220,6 +153,71 @@ char nextCharIgnoreSpace()
     if ((int)c == 32)
         return nextCharIgnoreSpace();
     return c;
+}
+
+void verifyPossibleTokenType()
+{
+    pwi = -1;
+    possibleType = nao_identificado;
+
+    if (ascii == (int)reserverd_words[0][0])
+    {
+        int _ascii = ascii;
+        char _c = c;
+        if ((int)nextChar() == (int)reserverd_words[0][1])
+        {
+            pwi = principal_index;
+            possibleType = principal;
+        }
+        else if (ascii == (int)reserverd_words[6][1])
+        {
+            pwi = para_index;
+            possibleType = palavra_reservada;
+        }
+        ascii = _ascii;
+        c = _c;
+        charIndex--;
+    }
+    else if (ascii == (int)reserverd_words[1][0])
+    {
+        pwi = funcao_index;
+        possibleType = funcao;
+    }
+    else if (ascii == (int)reserverd_words[2][0])
+    {
+        pwi = leitura_index;
+        possibleType = funcao_reservada;
+    }
+    else if (ascii == (int)reserverd_words[3][0])
+    {
+        pwi = escrita_index;
+        possibleType = funcao_reservada;
+    }
+    else if (ascii == (int)reserverd_words[4][0])
+    {
+        pwi = se_index;
+        possibleType = palavra_reservada;
+    }
+    else if (ascii == (int)reserverd_words[5][0])
+    {
+        pwi = senao_index;
+        possibleType = palavra_reservada;
+    }
+    else if (ascii == (int)reserverd_words[7][0])
+    {
+        pwi = inteiro_index;
+        possibleType = variavel;
+    }
+    else if (ascii == (int)reserverd_words[8][0])
+    {
+        pwi = caractere_index;
+        possibleType = variavel;
+    }
+    else if (ascii == (int)reserverd_words[9][0])
+    {
+        pwi = decimal_index;
+        possibleType = variavel;
+    }
 }
 
 void setScope(Token *scope)
@@ -528,7 +526,11 @@ void lexical_analysis(File *file)
                 readToSemicolonOrBreakLine();
 
                 if (ascii != 59) //
-                    log_abort("Finalização de expressão inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
+                    log_abort("Chamada de função reservada inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
+            }
+            else
+            {
+                log_info("TODO: Validar Para ou Se/Senao.\n");
             }
         }
         else if (ascii == 125) //}

@@ -12,4 +12,5 @@ funcao fsoma( inteiro &c, inteiro &d){
     inteiro &e;
     &e=&c+&d/100;
     escrita(&e);
+    para( ; ; ){}
 }
