@@ -9,7 +9,6 @@
 void _log(char *message, LogLevel level, va_list args)
 {
     char *buffer = (char *)malloc(MAX_LOG_LENGHT * sizeof(char));
-    Booleano _abort = FALSE;
 
     switch (level)
     {
@@ -31,7 +30,6 @@ void _log(char *message, LogLevel level, va_list args)
     }
 
     vprintf(buffer, args);
-    free(buffer);
 }
 
 void log_fatal(char *message, ...)
@@ -40,7 +38,6 @@ void log_fatal(char *message, ...)
     va_start(args, message);
     _log(message, LOG_FATAL, args);
     va_end(args);
-    exit(-1);
 }
 
 void log_error(char *message, ...)
@@ -49,7 +46,6 @@ void log_error(char *message, ...)
     va_start(args, message);
     _log(message, LOG_ERROR, args);
     va_end(args);
-    exit(-1);
 }
 
 void log_warning(char *message, ...)

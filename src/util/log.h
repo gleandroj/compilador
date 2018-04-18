@@ -5,7 +5,7 @@
 #include <stdarg.h>
 
 #ifndef MAX_LOG_LENGHT
-#define MAX_LOG_LENGHT 100
+#define MAX_LOG_LENGHT 200
 #endif
 
 typedef enum {

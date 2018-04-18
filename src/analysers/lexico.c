@@ -29,14 +29,13 @@ File *_file = NULL;
 Token *lastToken = NULL,
       *scopeToken = NULL;
 
-int charIndex = 0,
-    lineIndex = 0,
-    chavesCount = 0,
+int charIndex,
+    lineIndex,
+    chavesCount,
     ascii;
 
 char c;
 
-Booleano leuVirgula = FALSE;
 TokenType possibleType = nao_identificado;
 ReservedWordsIndex pwi = -1;
 
@@ -376,40 +375,48 @@ char *validaExpressao()
     return expressao;
 }
 
+void readToSemicolonOrBreakLine() //; or \n
+{
+    do
+    {
+        //leia até ;
+        nextChar();
+    } while (ascii != 10 && ascii != 59); //\n, ;
+}
+
 void lexical_analysis(File *file)
 {
     assert((_file = file) != NULL);
+    charIndex = lineIndex = chavesCount = 0;
+
     symbolList = (SymbolList *)allocate_memory(sizeof(SymbolList));
     symbolList->tokenCount = 0;
     list_new(&symbolList->tokens, sizeof(Token), free_token);
+
     while ((charIndex + 1) < _file->charactersCount)
     {
-        if (!leuVirgula)
-        {
-            nextCharIgnoreSpaceAndBreakLine();
-            verifyPossibleTokenType();
-        }
+        nextCharIgnoreSpaceAndBreakLine();
+        verifyPossibleTokenType();
 
-        int startTokenIndex = charIndex, tokenLineIndex = lineIndex;
+        int startTokenIndex = charIndex;
 
         if (possibleType != nao_identificado)
         {
             //valida palavra reservada
-            if (!leuVirgula)
-                validaPalavraReservada();
+            validaPalavraReservada();
 
             //Valida modulo/funcao principal
             if (possibleType == principal)
             {
                 if ((int)nextCharIgnoreSpaceAndBreakLine() != 40 || (int)nextCharIgnoreSpace() != 41) //()
-                    log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", tokenLineIndex + 1, c);
+                    log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
 
                 if ((int)nextCharIgnoreSpaceAndBreakLine() != 123) //{
-                    log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", tokenLineIndex + 1, c);
+                    log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
 
                 abriuChaves();
 
-                setScope(pushToken((char *)reserverd_words[pwi], principal, vazio, NULL, NULL, tokenLineIndex, startTokenIndex));
+                setScope(pushToken((char *)reserverd_words[pwi], principal, vazio, NULL, NULL, lineIndex, startTokenIndex));
                 continue;
             }
             else if (possibleType == funcao) //valida declaração/chamada de funcao
@@ -423,7 +430,7 @@ void lexical_analysis(File *file)
                 //Ignore space ex: funcao fsoma ();
                 ascii = ascii == 10 ? (int)(c = nextCharIgnoreSpace()) : ascii;
                 if (ascii != 40) //(
-                    log_abort("Declaração/chamada de função incorreta na linha: %d, caracter esperado \'(\'.\n", tokenLineIndex + 1);
+                    log_abort("Declaração/chamada de função incorreta na linha: %d, caracter esperado \'(\'.\n", lineIndex + 1);
 
                 if ((int)nextCharIgnoreSpace() != 41) //)
                 {
@@ -431,26 +438,26 @@ void lexical_analysis(File *file)
                     if (pwi == inteiro_index || pwi == caractere_index || pwi == decimal_index)
                     {
                         //Declaração de função com argumentos
-                        setScope(pushToken(funname, funcao, vazio, NULL, NULL, tokenLineIndex, startTokenIndex));
+                        setScope(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex));
                         do
                         {
-                            verifyPossibleTokenType(&c, &pwi, &possibleType);
-                            validaPalavraReservada(&c, tokenLineIndex);
+                            verifyPossibleTokenType();
+                            validaPalavraReservada();
 
                             if ((int)nextChar() != 32) //space
                                 log_abort("Declaração de argumento incorreto na linha: %d.\n", lineIndex + 1, c);
 
                             char *argname = validaVariavel();
-                            char *dataLenght = validaDataLenght(&c, &ascii);
+                            char *dataLenght = validaDataLenght();
 
-                            pushToken(argname, argumento, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, tokenLineIndex, startTokenIndex);
+                            pushToken(argname, argumento, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex);
                         } while (ascii == 44 && (int)nextCharIgnoreSpace() != -1); //,
 
                         if (ascii != 41) //)
-                            log_abort("Declaração de função incorreta na linha: %d, caracter esperado \')\'.\n", tokenLineIndex + 1);
+                            log_abort("Declaração de função incorreta na linha: %d, caracter esperado \')\'.\n", lineIndex + 1);
 
                         if ((int)nextCharIgnoreSpaceAndBreakLine() != 123) //{
-                            log_abort("Declaração de função incorreta na linha: %d, caracter esperado \'{\'.\n", tokenLineIndex + 1, c);
+                            log_abort("Declaração de função incorreta na linha: %d, caracter esperado \'{\'.\n", lineIndex + 1, c);
 
                         abriuChaves();
                     }
@@ -480,7 +487,7 @@ void lexical_analysis(File *file)
                 else if (ascii == 123) // {
                 {
                     //Declaração de função sem argumento
-                    setScope(pushToken(funname, funcao, vazio, NULL, NULL, tokenLineIndex, startTokenIndex));
+                    setScope(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex));
                     abriuChaves();
                 }
                 else
@@ -491,44 +498,55 @@ void lexical_analysis(File *file)
                 if (scopeToken == NULL)
                     log_abort("Declaração de variável fora de escopo.\n");
 
-                if (!leuVirgula && (ascii = (int)(c = nextChar())) != 32) //space
-                    log_abort("Declaração de variável incorreta na linha: %d.\n", tokenLineIndex, c);
+                if ((int)nextChar() != 32) //space
+                    log_abort("Declaração de variável incorreta na linha: %d.\n", lineIndex + 1);
 
-                char *varname = validaVariavel();
-                char *dataLenght = validaDataLenght(&c, &ascii);
+                Booleano leuVirgula = FALSE;
 
-                if (ascii == 44) //,
+                do
                 {
-                    leuVirgula = TRUE;
-                    pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, tokenLineIndex, startTokenIndex);
-                }
-                else if (ascii == 59) //; fim da declaração
-                {
-                    leuVirgula = FALSE;
-                    pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, tokenLineIndex, startTokenIndex);
-                }
-                else if (ascii == 61 && leuVirgula)
-                {
-                    log_abort("Declaração de variável incorreta, não é permitido atribuição com multiplas variáveis, linha: %d", tokenLineIndex);
-                }
-                else if (ascii == 61) //=
-                {
-                    char *dataValue = validaExpressao();
-                    printf("Declaração de variável com atribuição.\n");
-                    //TODO Finalizar com ;
-                }
+                    ascii == 38 ? --charIndex : charIndex; //&
+                    char *varname = validaVariavel();
+                    char *dataLenght = validaDataLenght(&c, &ascii);
+                    ascii == 32 ? nextCharIgnoreSpace() : ascii; // Ignore Space
+
+                    if (ascii == 44) //,
+                    {
+                        leuVirgula = TRUE;
+                        pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex);
+                        continue;
+                    }
+                    else if (ascii == 59) //; fim da declaração
+                    {
+                        leuVirgula = FALSE;
+                        pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex);
+                        break;
+                    }
+                    else if (ascii == 61 && leuVirgula) //=
+                    {
+                        log_abort("Declaração de variável incorreta, não é permitido atribuição com multiplas variáveis, linha: %d.\n", lineIndex + 1);
+                    }
+                    else if (ascii == 61) //=
+                    {
+                        char *dataValue = validaExpressao();
+                        printf("Declaração de variável com atribuição.\n");
+                        //TODO Finalizar com ;
+                    }
+                    else
+                    {
+                        log_abort("Declaração de variável incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
+                    }
+                } while (ascii == 44 && (int)nextCharIgnoreSpace() == 38); //, &
             }
             else if (possibleType == funcao_reservada)
             {
                 if ((int)nextChar() != 40) //(
-                    log_abort("Chamada de função reservada incorreta, caracter esperado: \'(\'.\n");
-                do
-                {
-                    nextChar();
-                } while (ascii != 10 && ascii != 59); //\n, ;
+                    log_abort("Chamada de função reservada incorreta, caracter esperado: \'(\' na linha: %d.\n", lineIndex + 1);
+
+                readToSemicolonOrBreakLine();
 
                 if (ascii != 59)
-                    log_abort("Finalização de expressão inválida, caracter esperado: \';\'");
+                    log_abort("Finalização de expressão inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
             }
         }
         else if (ascii == 125) //}
@@ -554,6 +572,6 @@ void lexical_analysis(File *file)
             //exit(1);
         }
     }
-    free_all();
+    //free_all();
     log_info("Finalizado analise lexica\n");
 }

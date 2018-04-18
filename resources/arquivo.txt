@@ -1,6 +1,6 @@
 
 principal(){
-    inteiro &a, &b;
+    inteiro &a, &b, &c;
     caractere &nome[30];
     funcao fsoma( &a,&b);
     funcao fnada();

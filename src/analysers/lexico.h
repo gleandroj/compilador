@@ -6,7 +6,7 @@
 
 extern char * const reserved_words[];
 
-#define MAX_VARIABLE_NAME_LEN 100
+#define MAX_VARIABLE_NAME_LEN 50
 
 typedef enum {
     principal_index, //0
