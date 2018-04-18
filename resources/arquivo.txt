@@ -6,7 +6,7 @@ principal(){
     funcao fnada();
 }
 
-funcao fnada(){}
+funcao fnada({}
 
 funcao fsoma( inteiro &c, inteiro &d){
     inteiro &c;

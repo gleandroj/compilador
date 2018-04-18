@@ -31,7 +31,6 @@ Token *lastToken = NULL,
 
 int charIndex,
     lineIndex,
-    chavesCount,
     ascii;
 
 char c;
@@ -65,20 +64,6 @@ void log_abort(char *message, ...)
     _log(message, LOG_ERROR, args);
     va_end(args);
     exit(0);
-}
-
-void abriuChaves()
-{
-    // PilhaItem *item = (PilhaItem *)allocate_memory(sizeof(PilhaItem));
-    // item->ascii = 123;
-    // item->charIndex = charIndex;
-    // list_append(&chavesPilha, item);
-    chavesCount++;
-}
-
-void fechouChaves()
-{
-    chavesCount--;
 }
 
 void verifyPossibleTokenType()
@@ -231,7 +216,7 @@ void setScope(Token *scope)
     scopeToken = scope;
 }
 
-char *validaVariavel()
+char *checkVariableName()
 {
     int varlen = 2;
     char buffer[MAX_VARIABLE_NAME_LEN];
@@ -255,7 +240,7 @@ char *validaVariavel()
     return varname;
 }
 
-char *validaFuncao()
+char *checkFunctionName()
 {
     int varlen = 1;
     char buffer[MAX_VARIABLE_NAME_LEN];
@@ -277,7 +262,7 @@ char *validaFuncao()
     return fname;
 }
 
-void validaPalavraReservada()
+void checkReservedWord()
 {
     int ci = 1, pwilen = strlen(reserverd_words[pwi]) - 1, ascii;
     //valida palavra reservada
@@ -289,7 +274,7 @@ void validaPalavraReservada()
     } while (ci <= pwilen);
 }
 
-char *validaDataLenght()
+char *checkDataLenght()
 {
     if (pwi == caractere_index || pwi == decimal_index)
     {
@@ -328,7 +313,7 @@ char *validaDataLenght()
     return NULL;
 }
 
-char *validaExpressao()
+char *checkExpression()
 {
     char buffer[MAX_VARIABLE_NAME_LEN];
     int len = 0;
@@ -339,7 +324,7 @@ char *validaExpressao()
         if (ascii == 38) //&
         {
             charIndex--;
-            char *varname = validaVariavel();
+            char *varname = checkVariableName();
             int i, varlen = strlen(varname);
             for (i = 0; i < varlen; i++, len++)
                 buffer[len] = varname[i];
@@ -387,7 +372,7 @@ void readToSemicolonOrBreakLine() //; or \n
 void lexical_analysis(File *file)
 {
     assert((_file = file) != NULL);
-    charIndex = lineIndex = chavesCount = 0;
+    charIndex = lineIndex = 0;
 
     symbolList = (SymbolList *)allocate_memory(sizeof(SymbolList));
     symbolList->tokenCount = 0;
@@ -403,7 +388,7 @@ void lexical_analysis(File *file)
         if (possibleType != nao_identificado)
         {
             //valida palavra reservada
-            validaPalavraReservada();
+            checkReservedWord();
 
             //Valida modulo/funcao principal
             if (possibleType == principal)
@@ -414,8 +399,6 @@ void lexical_analysis(File *file)
                 if ((int)nextCharIgnoreSpaceAndBreakLine() != 123) //{
                     log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
 
-                abriuChaves();
-
                 setScope(pushToken((char *)reserverd_words[pwi], principal, vazio, NULL, NULL, lineIndex, startTokenIndex));
                 continue;
             }
@@ -424,7 +407,7 @@ void lexical_analysis(File *file)
                 if ((int)nextChar() != 32) //space
                     log_abort("Declaração/chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
 
-                char *funname = validaFuncao();
+                char *funname = checkFunctionName();
 
                 //TODO: Validar com a professora
                 //Ignore space ex: funcao fsoma ();
@@ -432,9 +415,10 @@ void lexical_analysis(File *file)
                 if (ascii != 40) //(
                     log_abort("Declaração/chamada de função incorreta na linha: %d, caracter esperado \'(\'.\n", lineIndex + 1);
 
-                if ((int)nextCharIgnoreSpace() != 41) //)
+                if ((int)nextCharIgnoreSpace() != 41) // ) { possivel chamada/declaração de função
                 {
                     verifyPossibleTokenType();
+
                     if (pwi == inteiro_index || pwi == caractere_index || pwi == decimal_index)
                     {
                         //Declaração de função com argumentos
@@ -442,40 +426,38 @@ void lexical_analysis(File *file)
                         do
                         {
                             verifyPossibleTokenType();
-                            validaPalavraReservada();
+                            checkReservedWord();
 
                             if ((int)nextChar() != 32) //space
                                 log_abort("Declaração de argumento incorreto na linha: %d.\n", lineIndex + 1, c);
 
-                            char *argname = validaVariavel();
-                            char *dataLenght = validaDataLenght();
+                            char *argname = checkVariableName();
+                            char *dataLenght = checkDataLenght();
 
                             pushToken(argname, argumento, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex);
-                        } while (ascii == 44 && (int)nextCharIgnoreSpace() != -1); //,
+                        } while (ascii == 44 && ((int)nextCharIgnoreSpace() == 105 || ascii == 99 || ascii == 100)); //, &, i, c, d
 
                         if (ascii != 41) //)
                             log_abort("Declaração de função incorreta na linha: %d, caracter esperado \')\'.\n", lineIndex + 1);
 
                         if ((int)nextCharIgnoreSpaceAndBreakLine() != 123) //{
                             log_abort("Declaração de função incorreta na linha: %d, caracter esperado \'{\'.\n", lineIndex + 1, c);
-
-                        abriuChaves();
                     }
-                    else
+                    else if (ascii != 123)
                     {
                         //Chamada de função com argumentos: OK
                         //TODO: Verificar se a função existe, se não morre o processo.
                         //Varrer o código até achar e voltar para esse ponto
                         printf("Verificar se afunção %s já foi declarada.\n", funname);
-                        do
-                        {
-                            //Ignora validação da chamada da função, leia até ;
-                            nextChar();
-                        } while (ascii != 10 && ascii != 59); //\n, ;
 
-                        if (ascii != 59)
-                            log_abort("Finalização de chamada de função inválida, caracter esperado: \';\'.\n");
+                        //Ignora validação da chamada da função, leia até ;
+                        readToSemicolonOrBreakLine();
+
+                        if (ascii != 59) //;
+                            log_abort("Declaração/chamada de função inválida, na linha: %d, caracter esperado: \';\'.\n", lineIndex);
                     }
+                    else
+                        log_abort("Declaração/chamada de função inválida, na linha: %d, caracter inesperado: \'%c\'.\n", lineIndex + 1, c);
                 }
                 else if (ascii == 41 && (int)nextCharIgnoreSpace() == 59) //), ;
                 {
@@ -488,10 +470,9 @@ void lexical_analysis(File *file)
                 {
                     //Declaração de função sem argumento
                     setScope(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex));
-                    abriuChaves();
                 }
                 else
-                    log_abort("Declaração/chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
+                    log_abort("Declaração/chamada de função incorreta na linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
             }
             else if (possibleType == variavel) //valida declaração de variável
             {
@@ -506,8 +487,8 @@ void lexical_analysis(File *file)
                 do
                 {
                     ascii == 38 ? --charIndex : charIndex; //&
-                    char *varname = validaVariavel();
-                    char *dataLenght = validaDataLenght(&c, &ascii);
+                    char *varname = checkVariableName();
+                    char *dataLenght = checkDataLenght(&c, &ascii);
                     ascii == 32 ? nextCharIgnoreSpace() : ascii; // Ignore Space
 
                     if (ascii == 44) //,
@@ -523,19 +504,15 @@ void lexical_analysis(File *file)
                         break;
                     }
                     else if (ascii == 61 && leuVirgula) //=
-                    {
                         log_abort("Declaração de variável incorreta, não é permitido atribuição com multiplas variáveis, linha: %d.\n", lineIndex + 1);
-                    }
                     else if (ascii == 61) //=
                     {
-                        char *dataValue = validaExpressao();
+                        char *dataValue = checkExpression();
                         printf("Declaração de variável com atribuição.\n");
-                        //TODO Finalizar com ;
+                        //TODO Finalizar com ; ou matar o processo
                     }
                     else
-                    {
                         log_abort("Declaração de variável incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
-                    }
                 } while (ascii == 44 && (int)nextCharIgnoreSpace() == 38); //, &
             }
             else if (possibleType == funcao_reservada)
@@ -554,22 +531,18 @@ void lexical_analysis(File *file)
             //if (scopeToken == NULL)
             //    log_abort("Erro na linha %d, caracter inesperado: \'}\'");
             setScope(NULL);
-            fechouChaves();
         }
         else if (ascii == 38) //&
         {
             charIndex--;
-            char *varname = validaVariavel();
+            char *varname = checkVariableName();
             printf("Valida utilização de variável: %s.\n", varname);
 
             if (ascii == 61) //=
             {
-                char *dataValue = validaExpressao();
+                char *dataValue = checkExpression();
                 printf("Expressão: %s.\n", dataValue);
             }
-
-            //free_memory(varname);
-            //exit(1);
         }
     }
     //free_all();
