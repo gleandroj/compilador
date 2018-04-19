@@ -61,4 +61,6 @@ typedef struct _SymbolList {
 
 void lexical_analysis(File *file);
 
+extern SymbolList *symbolList;
+
 #endif

@@ -1,12 +1,12 @@
 
-funcao fnada(){}
-
 principal(){
     inteiro &a, &b;
     caractere &nome[30];
     funcao fsoma( &a,&b);
     funcao fnada();
 }
+
+funcao fnada(){}
 
 funcao fsoma( inteiro &c, inteiro &d){
     inteiro &c;

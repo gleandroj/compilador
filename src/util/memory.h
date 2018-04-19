@@ -2,6 +2,7 @@
 #define __MEMORY_H
 
 #include <stdlib.h>
+#include "list.h"
 #include "typings.h"
 
 /**
