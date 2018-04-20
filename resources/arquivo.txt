@@ -2,15 +2,12 @@
 principal(){
     inteiro &a, &b, &c;
     caractere &nome[30];
-    funcao fsoma( &a,&b);
-    funcao fnada();
+    leitura(&nome, &b);
+    se(&a==1) funcao fnada();
+    senao {
+        Linha 1;
+        Linha 2;
+    }
 }
 
 funcao fnada(){}
-
-funcao fsoma( inteiro &c, inteiro &d){
-    inteiro &e;
-    &e=&c+&d/100;
-    escrita(&e);
-    para( ; ; ){}
-}
