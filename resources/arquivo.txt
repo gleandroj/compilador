@@ -3,10 +3,12 @@ principal(){
     inteiro &a, &b, &c;
     caractere &nome[30];
     leitura(&nome, &b);
-    se(&a==1) funcao fnada();
-    senao {
-        Linha 1;
-        Linha 2;
+    se(){
+        se();
+        senao {
+            funcao fnada();
+            funcao fnada();
+        }
     }
 }
 

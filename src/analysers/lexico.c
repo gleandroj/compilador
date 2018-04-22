@@ -25,13 +25,14 @@ char const *reserverd_words[] = {
 };
 
 File *_file = NULL;
-Token *scopeToken = NULL;
+Token *scopeToken = NULL, *lastToken = NULL;
 SymbolList *symbolList = NULL;
 List *funStack = NULL;
 
 int charIndex,
     lineIndex,
-    ascii;
+    ascii,
+    startTokenIndex;
 
 char c;
 
@@ -122,13 +123,21 @@ void verifyPossibleTokenType()
     }
     else if (ascii == (int)reserverd_words[4][0])
     {
-        pwi = se_index;
-        possibleType = palavra_reservada;
-    }
-    else if (ascii == (int)reserverd_words[5][0])
-    {
-        pwi = senao_index;
-        possibleType = palavra_reservada;
+        int _ascii = ascii;
+        char _c = c;
+        if ((int)nextChar() == (int)reserverd_words[5][1] && (int)nextChar() == (int)reserverd_words[5][2])
+        {
+            pwi = senao_index;
+            possibleType = palavra_reservada;
+        }
+        else
+        {
+            pwi = se_index;
+            possibleType = palavra_reservada;
+        }
+        ascii = _ascii;
+        c = _c;
+        charIndex -= 2;
     }
     else if (ascii == (int)reserverd_words[7][0])
     {
@@ -152,6 +161,11 @@ void setScope(Token *scope)
     if (scope != NULL && scopeToken != NULL)
         log_abort("Erro na declaração de função, caracter esperado \'}\' na linha: %d.\n", lineIndex);
     scopeToken = scope;
+}
+
+Token *setLastToken(Token *token)
+{
+    return lastToken = token;
 }
 
 char *checkVariableName()
@@ -408,6 +422,201 @@ void checkReservedFunctionCall()
         log_abort("Chamada de função reservada inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
 }
 
+void checkVariableDeclaration()
+{
+    if (scopeToken == NULL)
+        log_abort("Declaração de variável fora de escopo.\n");
+
+    if ((int)nextChar() != 32) //space
+        log_abort("Declaração de variável incorreta na linha: %d.\n", lineIndex + 1);
+
+    Booleano leuVirgula = FALSE;
+
+    do
+    {
+        ascii == 38 ? --charIndex : charIndex; //&
+        char *varname = checkVariableName();
+        char *dataLenght = checkDataLenght(&c, &ascii);
+        ascii == 32 ? nextCharIgnoreSpace() : ascii; // Ignore Space
+
+        if (ascii == 44) //,
+        {
+            leuVirgula = TRUE;
+            setLastToken(pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken));
+            continue;
+        }
+        else if (ascii == 59) //; fim da declaração
+        {
+            leuVirgula = FALSE;
+            setLastToken(pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken));
+            break;
+        }
+        else if (ascii == 61 && leuVirgula) //=
+            log_abort("Declaração de variável incorreta, não é permitido atribuição com multiplas variáveis, linha: %d.\n", lineIndex + 1);
+        else if (ascii == 61) //=
+        {
+            char *dataValue = checkExpression();
+            printf("Declaração de variável com atribuição.\n");
+            //TODO Finalizar com ; ou matar o processo
+        }
+        else
+            log_abort("Declaração de variável incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
+    } while (ascii == 44 && (int)nextCharIgnoreSpace() == 38); //, &
+}
+
+void checkFunctionCallOrStatment()
+{
+    if ((int)nextChar() != 32) //space
+        log_abort("Declaração/chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
+
+    char *funname = checkFunctionName();
+
+    //TODO: Validar com a professora
+    //Ignore space ex: funcao fsoma ();
+    ascii = ascii == 10 ? (int)(c = nextCharIgnoreSpace()) : ascii;
+    if (ascii != 40) //(
+        log_abort("Declaração/chamada de função incorreta na linha: %d, caracter esperado \'(\'.\n", lineIndex + 1);
+
+    if ((int)nextCharIgnoreSpace() != 41) // ) { possivel chamada/declaração de função
+    {
+        verifyPossibleTokenType();
+
+        if (pwi == inteiro_index || pwi == caractere_index || pwi == decimal_index)
+        {
+            //Declaração de função com argumentos
+            setScope(setLastToken(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken)));
+            do
+            {
+                verifyPossibleTokenType();
+                checkReservedWord(FALSE);
+
+                if ((int)nextChar() != 32) //space
+                    log_abort("Declaração de argumento incorreto na linha: %d.\n", lineIndex + 1, c);
+
+                char *argname = checkVariableName();
+                char *dataLenght = checkDataLenght();
+
+                setLastToken(pushToken(argname, argumento, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken));
+            } while (ascii == 44 && ((int)nextCharIgnoreSpace() == 105 || ascii == 99 || ascii == 100)); //, &, i, c, d
+
+            if (ascii != 41) //)
+                log_abort("Declaração de função incorreta na linha: %d, caracter esperado \')\'.\n", lineIndex + 1);
+
+            if ((int)nextCharIgnoreSpaceAndBreakLine() != 123) //{
+                log_abort("Declaração de função incorreta na linha: %d, caracter esperado \'{\'.\n", lineIndex + 1, c);
+        }
+        else if (ascii != 123)
+        {
+            //Chamada de função com argumentos: OK
+            checkFunctionCallOrFail(funname);
+        }
+        else
+            log_abort("Declaração/chamada de função inválida, na linha: %d, caracter inesperado: \'%c\'.\n", lineIndex + 1, c);
+    }
+    else if (ascii == 41 && (int)nextCharIgnoreSpace() == 59) //), ;
+    {
+        //Chamada de função sem argumento: OK.
+        //Verifica se a função existe, se não morre o processo
+        analiseFunctionByNameOrFail(funname);
+    }
+    else if (ascii == 123) // {
+    {
+        //Declaração de função sem argumento
+        setScope(setLastToken(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken)));
+    }
+    else
+        log_abort("Declaração/chamada de função incorreta na linha:) %d, caracter inesperado: %c.\n", lineIndex + 1, c);
+}
+
+void checkMainFunction()
+{
+    if ((int)nextCharIgnoreSpaceAndBreakLine() != 40 || (int)nextCharIgnoreSpace() != 41) //()
+        log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
+
+    if ((int)nextCharIgnoreSpaceAndBreakLine() != 123) //{
+        log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
+
+    setScope(setLastToken(pushToken((char *)reserverd_words[pwi], principal, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken)));
+}
+
+void checkIfStatmentLine()
+{
+    verifyPossibleTokenType();
+
+    if (possibleType == variavel)
+        log_abort("Declaração de variável não é permitida dentro do bloco do se/senão. Linha: %d.\n", lineIndex + 1);
+    else if (possibleType == palavra_reservada && pwi == para_index)
+    {
+        //TODO: CheckForStatment
+    }
+    else if (possibleType == palavra_reservada && (pwi == se_index || pwi == senao_index))
+    {
+        checkReservedWord(FALSE);
+        checkIfElseStatment();
+    }
+    else if ((possibleType == funcao || possibleType == funcao_reservada) && checkReservedWord(FALSE))
+    {
+        if (possibleType == funcao && (int)nextChar() != 32) //space
+            log_abort("Chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
+        else if (possibleType == funcao)
+            checkFunctionCallOrFail(checkFunctionName());
+        else
+            checkReservedFunctionCall();
+    }
+    else if (ascii == 38) //&
+    {
+        //Utilização de variável
+        charIndex--;
+        char *varname = checkVariableName();
+        //TODO: Verificar se foi declarada;
+        checkExpression();
+    }
+    else
+        log_abort("Caracter inesperado na linha: %d, caracter: %c.\n", lineIndex + 1, c);
+}
+
+void checkIfElseStatment()
+{
+    Booleano leuSe = FALSE;
+    do
+    {
+        if (pwi == se_index)
+        {
+            leuSe = TRUE;
+            if ((int)nextCharIgnoreSpace() != 40) //(
+                log_abort("Utilização de palavra reservada incorreta na linha: %d, caracter esperado \'(\'.\n", lineIndex + 1);
+            int _di[] = {41, 10, 123, 59}; // ), \n, {, ;
+            readTo(_di, 4);
+            if (ascii != 41) // )
+                log_abort("Utilização de palavra reservada incorreta na linha: %d, caracter esperado \')\'.\n", lineIndex + 1);
+        }
+        else if (!leuSe)
+            log_abort("Não é permitido a utilização da palavra reservada senao sem um se, na linha: %d.\n", lineIndex + 1);
+        else
+            leuSe = FALSE;
+
+        //Se de uma linha, não permite declaração, permite expressão e chamada de funções
+        if ((int)nextCharIgnoreSpaceAndBreakLine() != 123 && ascii != 59) //{, ;
+        {
+            checkIfStatmentLine();
+        }
+        else if (ascii == 123 && (int)nextCharIgnoreSpaceAndBreakLine() != 125) //{ }
+        {
+            do
+            {
+                checkIfStatmentLine();
+            } while ((int)nextCharIgnoreSpaceAndBreakLine() != 125); //}
+        }
+
+        nextCharIgnoreSpaceAndBreakLine();
+        verifyPossibleTokenType();
+        if (possibleType == palavra_reservada && (pwi == se_index || pwi == senao_index))
+            checkReservedWord(FALSE);
+        else
+            charIndex--;
+    } while (pwi == se_index || pwi == senao_index);
+}
+
 void initialize()
 {
     newSymbolList();
@@ -423,7 +632,7 @@ void findTokens()
         nextCharIgnoreSpaceAndBreakLine();
         verifyPossibleTokenType();
 
-        int startTokenIndex = charIndex;
+        startTokenIndex = charIndex;
 
         if (possibleType != nao_identificado)
         {
@@ -433,118 +642,16 @@ void findTokens()
             //Valida modulo/funcao principal
             if (possibleType == principal)
             {
-                if ((int)nextCharIgnoreSpaceAndBreakLine() != 40 || (int)nextCharIgnoreSpace() != 41) //()
-                    log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
-
-                if ((int)nextCharIgnoreSpaceAndBreakLine() != 123) //{
-                    log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
-
-                setScope(pushToken((char *)reserverd_words[pwi], principal, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken));
+                checkMainFunction();
                 continue;
             }
             else if (possibleType == funcao) //valida declaração/chamada de funcao
             {
-                if ((int)nextChar() != 32) //space
-                    log_abort("Declaração/chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
-
-                char *funname = checkFunctionName();
-
-                //TODO: Validar com a professora
-                //Ignore space ex: funcao fsoma ();
-                ascii = ascii == 10 ? (int)(c = nextCharIgnoreSpace()) : ascii;
-                if (ascii != 40) //(
-                    log_abort("Declaração/chamada de função incorreta na linha: %d, caracter esperado \'(\'.\n", lineIndex + 1);
-
-                if ((int)nextCharIgnoreSpace() != 41) // ) { possivel chamada/declaração de função
-                {
-                    verifyPossibleTokenType();
-
-                    if (pwi == inteiro_index || pwi == caractere_index || pwi == decimal_index)
-                    {
-                        //Declaração de função com argumentos
-                        setScope(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken));
-                        do
-                        {
-                            verifyPossibleTokenType();
-                            checkReservedWord(FALSE);
-
-                            if ((int)nextChar() != 32) //space
-                                log_abort("Declaração de argumento incorreto na linha: %d.\n", lineIndex + 1, c);
-
-                            char *argname = checkVariableName();
-                            char *dataLenght = checkDataLenght();
-
-                            pushToken(argname, argumento, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken);
-                        } while (ascii == 44 && ((int)nextCharIgnoreSpace() == 105 || ascii == 99 || ascii == 100)); //, &, i, c, d
-
-                        if (ascii != 41) //)
-                            log_abort("Declaração de função incorreta na linha: %d, caracter esperado \')\'.\n", lineIndex + 1);
-
-                        if ((int)nextCharIgnoreSpaceAndBreakLine() != 123) //{
-                            log_abort("Declaração de função incorreta na linha: %d, caracter esperado \'{\'.\n", lineIndex + 1, c);
-                    }
-                    else if (ascii != 123)
-                    {
-                        //Chamada de função com argumentos: OK
-                        checkFunctionCallOrFail(funname);
-                    }
-                    else
-                        log_abort("Declaração/chamada de função inválida, na linha: %d, caracter inesperado: \'%c\'.\n", lineIndex + 1, c);
-                }
-                else if (ascii == 41 && (int)nextCharIgnoreSpace() == 59) //), ;
-                {
-                    //Chamada de função sem argumento: OK.
-                    //Verifica se a função existe, se não morre o processo
-                    analiseFunctionByNameOrFail(funname);
-                }
-                else if (ascii == 123) // {
-                {
-                    //Declaração de função sem argumento
-                    setScope(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken));
-                }
-                else
-                    log_abort("Declaração/chamada de função incorreta na linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
+                checkFunctionCallOrStatment();
             }
             else if (possibleType == variavel) //valida declaração de variável
             {
-                if (scopeToken == NULL)
-                    log_abort("Declaração de variável fora de escopo.\n");
-
-                if ((int)nextChar() != 32) //space
-                    log_abort("Declaração de variável incorreta na linha: %d.\n", lineIndex + 1);
-
-                Booleano leuVirgula = FALSE;
-
-                do
-                {
-                    ascii == 38 ? --charIndex : charIndex; //&
-                    char *varname = checkVariableName();
-                    char *dataLenght = checkDataLenght(&c, &ascii);
-                    ascii == 32 ? nextCharIgnoreSpace() : ascii; // Ignore Space
-
-                    if (ascii == 44) //,
-                    {
-                        leuVirgula = TRUE;
-                        pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken);
-                        continue;
-                    }
-                    else if (ascii == 59) //; fim da declaração
-                    {
-                        leuVirgula = FALSE;
-                        pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken);
-                        break;
-                    }
-                    else if (ascii == 61 && leuVirgula) //=
-                        log_abort("Declaração de variável incorreta, não é permitido atribuição com multiplas variáveis, linha: %d.\n", lineIndex + 1);
-                    else if (ascii == 61) //=
-                    {
-                        char *dataValue = checkExpression();
-                        printf("Declaração de variável com atribuição.\n");
-                        //TODO Finalizar com ; ou matar o processo
-                    }
-                    else
-                        log_abort("Declaração de variável incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
-                } while (ascii == 44 && (int)nextCharIgnoreSpace() == 38); //, &
+                checkVariableDeclaration();
             }
             else if (possibleType == funcao_reservada)
             {
@@ -552,60 +659,18 @@ void findTokens()
             }
             else
             {
-                log_info("TODO: Validar Para ou Se/Senao.\n");
-                if ((int)nextCharIgnoreSpace() != 40) //(
-                    log_abort("Chamada de função reservada incorreta na linha: %d, caracter esperado \'(\'.\n", lineIndex + 1);
-
-                int _di[] = {41, 10, 123, 59}; // ), \n, {, ;
-                readTo(_di, 4);
-
-                if (ascii != 41)
-                    log_abort("Chamada de função reservada incorreta na linha: %d, caracter esperado \'(\'.\n", lineIndex + 1);
-
                 if (pwi == para_index)
                 {
+                    //TODO: CheckForStatment
                 }
-                else if (pwi == se_index)
+                else if (pwi == se_index || pwi == senao_index)
                 {
-                    //Se de uma linha, não permite declaração, permite expressão e chamada de funções
-                    if ((int)nextCharIgnoreSpaceAndBreakLine() != 123 && ascii != 59) //{, ;
-                    {
-                        verifyPossibleTokenType();
-                        if (possibleType == variavel)
-                            log_abort("Declaração de variável não é permitida dentro do bloco do se/senão. Linha: %d.\n", lineIndex + 1);
-                        else if ((possibleType == funcao || possibleType == funcao_reservada) && checkReservedWord(FALSE))
-                        {
-                            if (possibleType == funcao && (int)nextChar() != 32) //space
-                                log_abort("Declaração/chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
-                            else if (possibleType == funcao)
-                                checkFunctionCallOrFail(checkFunctionName());
-                            else
-                                checkReservedFunctionCall();
-                        }
-                        else if (ascii == 38) //&
-                        {
-                            charIndex--;
-                            char *varname = checkVariableName();
-                            //TODO: Verificar se foi declarada;
-                            checkExpression();
-                        }
-                        else
-                            log_abort("Caracter inesperado na linha: %d, caracter: %c.\n", lineIndex + 1, c);
-                    }
-                    else
-                    {
-                    }
-                }
-                else
-                {
-                    //Senao sem se ??
+                    checkIfElseStatment();
                 }
             }
         }
         else if (ascii == 125) //}
         {
-            //if (scopeToken == NULL)
-            //    log_abort("Erro na linha %d, caracter inesperado: \'}\'");
             setScope(NULL);
             if (funStack->logicalLength > 0)
             {
@@ -624,9 +689,12 @@ void findTokens()
             if (ascii == 61 && token != NULL) //=
             {
                 token->value = checkExpression();
-                //log_info("Atribuição para o token: %s = %s.\n", token->name, token->value);
-            }
+            }else if(token == NULL)
+                log_abort("Utilização de variável não declarada, variável: %s, linha: %d.\n", varname, lineIndex + 1);
+                
         }
+        else
+            log_abort("Caracter inesperado na linha: %d, caracter: %c.\n", lineIndex + 1, c);
     }
 }
 

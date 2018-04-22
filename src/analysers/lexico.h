@@ -67,6 +67,11 @@ void verifyPossibleTokenType();
 void setScope(Token *scope);
 
 /**
+ * Guarda a referência do último token processado
+ */
+Token* setLastToken(Token *token);
+
+/**
  * Verifica a declaração do nome da variável
  */
 char *checkVariableName();
@@ -111,6 +116,36 @@ FunStackData *findFunctionStatement(char *funname);
  * Realiza a análise para uma função ou falha se não encontrar
  */
 void checkFunctionCallOrFail(char *funname);
+
+/**
+ * Verifica chama de função reservada (leitura(), escrita())
+ */
+void checkReservedFunctionCall();
+
+/**
+ * Verifica declaração de variável completamente
+ */
+void checkVariableDeclaration();
+
+/**
+ * Verifica chamada de função ou declaração de função
+ */
+void checkFunctionCallOrStatment();
+
+/**
+ * Verifica função principal
+ */
+void checkMainFunction();
+
+/**
+ * Verifica uma linha do Se/Senão (!declaração, function call, expression)
+ */
+void checkIfStatmentLine();
+
+/**
+ * Verifica Se/Senão completo
+ */
+void checkIfElseStatment();
 
 /**
  * Inicializa a tabela de simbolos e a pilha de análise de funções
