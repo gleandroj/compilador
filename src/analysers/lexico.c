@@ -25,7 +25,7 @@ char const *reserverd_words[] = {
 };
 
 File *_file = NULL;
-Token *scopeToken = NULL, *lastToken = NULL;
+Token *scopeToken = NULL;
 SymbolList *symbolList = NULL;
 List *funStack = NULL;
 
@@ -161,11 +161,6 @@ void setScope(Token *scope)
     if (scope != NULL && scopeToken != NULL)
         log_abort("Erro na declaração de função, caracter esperado \'}\' na linha: %d.\n", lineIndex);
     scopeToken = scope;
-}
-
-Token *setLastToken(Token *token)
-{
-    return lastToken = token;
 }
 
 char *checkVariableName()
@@ -442,13 +437,13 @@ void checkVariableDeclaration()
         if (ascii == 44) //,
         {
             leuVirgula = TRUE;
-            setLastToken(pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken));
+            pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken);
             continue;
         }
         else if (ascii == 59) //; fim da declaração
         {
             leuVirgula = FALSE;
-            setLastToken(pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken));
+            pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken);
             break;
         }
         else if (ascii == 61 && leuVirgula) //=
@@ -491,7 +486,7 @@ void checkFunctionCallOrStatment()
         if (pwi == inteiro_index || pwi == caractere_index || pwi == decimal_index)
         {
             //Declaração de função com argumentos
-            setScope(setLastToken(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken)));
+            setScope(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken));
             do
             {
                 verifyPossibleTokenType();
@@ -503,7 +498,7 @@ void checkFunctionCallOrStatment()
                 char *argname = checkVariableName();
                 char *dataLenght = checkDataLenght();
 
-                setLastToken(pushToken(argname, argumento, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken));
+                pushToken(argname, argumento, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken);
             } while (ascii == 44 && ((int)nextCharIgnoreSpace() == 105 || ascii == 99 || ascii == 100)); //, &, i, c, d
 
             if (ascii != 41) //)
@@ -531,7 +526,7 @@ void checkFunctionCallOrStatment()
     else if (ascii == 123) // {
     {
         //Declaração de função sem argumento
-        setScope(setLastToken(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken)));
+        setScope(pushToken(funname, funcao, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken));
     }
     else
         log_abort("Declaração/chamada de função incorreta na linha:) %d, caracter inesperado: %c.\n", lineIndex + 1, c);
@@ -545,7 +540,7 @@ void checkMainFunction()
     if ((int)nextCharIgnoreSpaceAndBreakLine() != 123) //{
         log_abort("Erro na declaração do módulo/função princial na linha: %d caracter: %c.\n", lineIndex + 1, c);
 
-    setScope(setLastToken(pushToken((char *)reserverd_words[pwi], principal, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken)));
+    setScope(pushToken((char *)reserverd_words[pwi], principal, vazio, NULL, NULL, lineIndex, startTokenIndex, scopeToken));
 }
 
 void checkIfStatmentLine()

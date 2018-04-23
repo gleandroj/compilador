@@ -68,11 +68,6 @@ void verifyPossibleTokenType();
 void setScope(Token *scope);
 
 /**
- * Guarda a referência do último token processado
- */
-Token* setLastToken(Token *token);
-
-/**
  * Verifica a declaração do nome da variável
  */
 char *checkVariableName();
