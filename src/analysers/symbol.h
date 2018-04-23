@@ -28,8 +28,10 @@ typedef struct _Token
     char *name;
     char *dataLenght;
     struct _Token *parent;
-    int lineIndex;
+    int startLineIndex;
     int startCharIndex;
+    int endCharIndex;
+    int endLineIndex;
 } Token;
 
 typedef struct _SymbolList

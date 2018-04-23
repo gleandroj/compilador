@@ -28,6 +28,7 @@ typedef struct _FunStackData
     int backtrackCharIndex;
     int backtrackLineIndex;
     int startIndex;
+    int lineIndex;
     Token *backtrackScope;
 } FunStackData;
 
@@ -113,9 +114,9 @@ void readTo(int chars[], int len);
 FunStackData *findFunctionStatement(char *funname);
 
 /**
- * Realiza a análise para uma função ou falha se não encontrar
+ * Valida chamada de função e realiza a análise léxica para uma função ou falha se não encontrar
  */
-void checkFunctionCallOrFail(char *funname);
+void checkFunctionCallOrFail(char *funname, Booleano allowAnalyse);
 
 /**
  * Verifica chama de função reservada (leitura(), escrita())
@@ -146,6 +147,21 @@ void checkIfStatmentLine();
  * Verifica Se/Senão completo
  */
 void checkIfElseStatment();
+
+/**
+ * Verifica utilização de varável e atribui valor caso necessãrio.
+ */
+void checksForVariableUsage(Booleano allowAssign);
+
+/**
+ * Verifica uma linha do for(declaração, function call, expression)
+ */
+void checkForStatmentLine();
+
+/**
+ *  Verifica para completo
+ */
+void checkForStatment();
 
 /**
  * Inicializa a tabela de simbolos e a pilha de análise de funções

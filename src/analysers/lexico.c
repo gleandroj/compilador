@@ -367,6 +367,7 @@ FunStackData *findFunctionStatement(char *funname)
                     fs->backtrackScope = scope;
                     fs->funname = funname;
                     fs->startIndex = charIndex - readLen;
+                    fs->lineIndex = lineIndex;
                     return fs;
                 }
             }
@@ -379,12 +380,6 @@ FunStackData *findFunctionStatement(char *funname)
 
 void analiseFunctionByNameOrFail(char *funname)
 {
-    Token *funToken = getTokenByName(funname);
-    Booleano isDeclared = funToken != NULL && funToken->lineIndex == lineIndex;
-
-    if (isDeclared)
-        return;
-
     //Verifica se a função existe, se não morre o processo.
     //Varrer o código até achar e voltar para esse ponto
     FunStackData *fs = findFunctionStatement(funname);
@@ -394,6 +389,7 @@ void analiseFunctionByNameOrFail(char *funname)
     list_append(funStack, fs);
     //Aponta para o caracter do inicio da declaração da função
     charIndex = fs->startIndex;
+    lineIndex = fs->lineIndex;
     //Ignora o Scopo atual
     setScope(NULL);
     //Faz analise da função
@@ -401,10 +397,11 @@ void analiseFunctionByNameOrFail(char *funname)
     findTokens();
 }
 
-void checkFunctionCallOrFail(char *funname)
+void checkFunctionCallOrFail(char *funname, Booleano allowAnalyse)
 {
     //Verifica se a função existe, se não morre o processo
-    analiseFunctionByNameOrFail(funname);
+    if (allowAnalyse)
+        analiseFunctionByNameOrFail(funname);
     //Ignora validação da chamada da função, leia até ;
     readToSemicolonOrBreakLine();
     if (ascii != 59) //;
@@ -431,11 +428,15 @@ void checkVariableDeclaration()
         log_abort("Declaração de variável incorreta na linha: %d.\n", lineIndex + 1);
 
     Booleano leuVirgula = FALSE;
-
     do
     {
         ascii == 38 ? --charIndex : charIndex; //&
         char *varname = checkVariableName();
+
+        Token *token = getTokenByName(varname);
+        if (token != NULL)
+            log_abort("Variável já declarada, variável: %s, linha: %d.\n", varname, lineIndex + 1);
+
         char *dataLenght = checkDataLenght(&c, &ascii);
         ascii == 32 ? nextCharIgnoreSpace() : ascii; // Ignore Space
 
@@ -457,7 +458,6 @@ void checkVariableDeclaration()
         {
             char *dataValue = checkExpression();
             printf("Declaração de variável com atribuição.\n");
-            //TODO Finalizar com ; ou matar o processo
         }
         else
             log_abort("Declaração de variável incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
@@ -470,6 +470,14 @@ void checkFunctionCallOrStatment()
         log_abort("Declaração/chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
 
     char *funname = checkFunctionName();
+    Token *funToken = getTokenByName(funname);
+
+    if (funToken != NULL && funToken->startLineIndex == lineIndex)
+    {
+        charIndex = funToken->endCharIndex;
+        lineIndex = funToken->endLineIndex;
+        return;
+    }
 
     //TODO: Validar com a professora
     //Ignore space ex: funcao fsoma ();
@@ -508,7 +516,7 @@ void checkFunctionCallOrStatment()
         else if (ascii != 123)
         {
             //Chamada de função com argumentos: OK
-            checkFunctionCallOrFail(funname);
+            checkFunctionCallOrFail(funname, funToken == NULL);
         }
         else
             log_abort("Declaração/chamada de função inválida, na linha: %d, caracter inesperado: \'%c\'.\n", lineIndex + 1, c);
@@ -519,6 +527,8 @@ void checkFunctionCallOrStatment()
         //Verifica se a função existe, se não morre o processo
         analiseFunctionByNameOrFail(funname);
     }
+    else if (ascii == 123 && funToken != NULL) // {
+        log_abort("Função %s já declarada na linha: %d, redeclaração na linha: %d.\n", funname, funToken->startLineIndex + 1, lineIndex + 1);
     else if (ascii == 123) // {
     {
         //Declaração de função sem argumento
@@ -547,7 +557,8 @@ void checkIfStatmentLine()
         log_abort("Declaração de variável não é permitida dentro do bloco do se/senão. Linha: %d.\n", lineIndex + 1);
     else if (possibleType == palavra_reservada && pwi == para_index)
     {
-        //TODO: CheckForStatment
+        checkReservedWord(FALSE);
+        checkForStatment();
     }
     else if (possibleType == palavra_reservada && (pwi == se_index || pwi == senao_index))
     {
@@ -559,17 +570,18 @@ void checkIfStatmentLine()
         if (possibleType == funcao && (int)nextChar() != 32) //space
             log_abort("Chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
         else if (possibleType == funcao)
-            checkFunctionCallOrFail(checkFunctionName());
+        {
+            char *funName = checkFunctionName();
+            Token *funToken = getTokenByName(funName);
+            checkFunctionCallOrFail(funName, funToken == NULL);
+        }
         else
             checkReservedFunctionCall();
     }
     else if (ascii == 38) //&
     {
         //Utilização de variável
-        charIndex--;
-        char *varname = checkVariableName();
-        //TODO: Verificar se foi declarada;
-        checkExpression();
+        checksForVariableUsage(FALSE);
     }
     else
         log_abort("Caracter inesperado na linha: %d, caracter: %c.\n", lineIndex + 1, c);
@@ -617,6 +629,97 @@ void checkIfElseStatment()
     } while (pwi == se_index || pwi == senao_index);
 }
 
+void checksForVariableUsage(Booleano allowAssign)
+{
+    charIndex--;
+    char *varname = checkVariableName();
+    Token *token = getTokenByName(varname);
+    ascii == 32 ? nextCharIgnoreSpace() : ascii; //Ignore Space
+    if (ascii == 61 && token != NULL)            //=
+    {
+        char *expression = checkExpression();
+        if (allowAssign)
+            token->value = expression;
+    }
+    else if (token == NULL)
+        log_abort("Utilização de variável não declarada, variável: %s, linha: %d.\n", varname, lineIndex + 1);
+}
+
+void checkForStatmentLine()
+{
+    verifyPossibleTokenType();
+
+    if (possibleType == variavel)
+    {
+        checkReservedWord(FALSE);
+        checkVariableDeclaration();
+    }
+    else if (possibleType == palavra_reservada && pwi == para_index)
+    {
+        checkReservedWord(FALSE);
+        checkForStatment();
+    }
+    else if (possibleType == palavra_reservada && (pwi == se_index || pwi == senao_index))
+    {
+        checkReservedWord(FALSE);
+        checkIfElseStatment();
+    }
+    else if ((possibleType == funcao || possibleType == funcao_reservada) && checkReservedWord(FALSE))
+    {
+        if (possibleType == funcao && (int)nextChar() != 32) //space
+            log_abort("Chamada de função incorreta na linha: %d.\n", lineIndex + 1, c);
+        else if (possibleType == funcao)
+        {
+            char *funName = checkFunctionName();
+            Token *funToken = getTokenByName(funName);
+            checkFunctionCallOrFail(funName, funToken != NULL);
+        }
+        else
+            checkReservedFunctionCall();
+    }
+    else if (ascii == 38) //&
+    {
+        //Utilização de variável
+        checksForVariableUsage(FALSE);
+    }
+    else
+        log_abort("Caracter inesperado na linha: %d, caracter: %c.\n", lineIndex + 1, c);
+}
+
+void checkForStatment()
+{
+    if ((int)nextCharIgnoreSpace() != 40) //(
+        log_abort("Utilização de palavra reservada incorreta na linha: %d, caracter esperado \'(\'.\n", lineIndex + 1);
+    int _di[] = {41, 10, 123, 59}, // ), \n, {, ;
+        _pt[] = {59};              // ;
+
+    //Ignora os 2 ;
+    readTo(_pt, 1);  // ;
+    if (ascii != 59) // ;
+        log_abort("Utilização de palavra reservada incorreta na linha: %d, caracter esperado \';\'.\n", lineIndex + 1);
+    readTo(_pt, 1);  // ;
+    if (ascii != 59) // ;
+        log_abort("Utilização de palavra reservada incorreta na linha: %d, caracter esperado \';\'.\n", lineIndex + 1);
+
+    readTo(_di, 4);
+
+    if (ascii != 41) // )
+        log_abort("Utilização de palavra reservada incorreta na linha: %d, caracter esperado \')\'.\n", lineIndex + 1);
+
+    //Se de uma linha, não permite declaração, permite expressão e chamada de funções
+    if ((int)nextCharIgnoreSpaceAndBreakLine() != 123 && ascii != 59) //{, ;
+    {
+        checkForStatmentLine();
+    }
+    else if (ascii == 123 && (int)nextCharIgnoreSpaceAndBreakLine() != 125) //{ }
+    {
+        do
+        {
+            checkForStatmentLine();
+        } while ((int)nextCharIgnoreSpaceAndBreakLine() != 125); //}
+    }
+}
+
 void initialize()
 {
     newSymbolList();
@@ -653,45 +756,41 @@ void findTokens()
             {
                 checkVariableDeclaration();
             }
-            else if (possibleType == funcao_reservada)
+            else if (possibleType == funcao_reservada) //valida chamada de função reservada (leitura, escrita)
             {
                 checkReservedFunctionCall();
             }
-            else
+            else if (possibleType == palavra_reservada && pwi == para_index) //valida palavra reservada (para)
             {
-                if (pwi == para_index)
-                {
-                    //TODO: CheckForStatment
-                }
-                else if (pwi == se_index || pwi == senao_index)
-                {
-                    checkIfElseStatment();
-                }
+                checkForStatment();
+            }
+            else if (possibleType == palavra_reservada && (pwi == se_index || pwi == senao_index)) //valida palavra reservada (se, senao)
+            {
+                checkIfElseStatment();
             }
         }
-        else if (ascii == 125) //}
+        else if (ascii == 125) //}, fim de escopo de função
         {
-            setScope(NULL);
+            if (scopeToken != NULL)
+            {
+                scopeToken->endCharIndex = charIndex;
+                scopeToken->endLineIndex = lineIndex;
+                setScope(NULL);
+            }
+
             if (funStack->logicalLength > 0)
             {
                 FunStackData *fs = (FunStackData *)list_pop(funStack);
                 charIndex = fs->backtrackCharIndex;
                 lineIndex = fs->backtrackLineIndex;
                 setScope(fs->backtrackScope);
+                //Retornar para a função checkFunctionCallOrFail.
                 return;
             }
         }
-        else if (ascii == 38) //&
+        else if (ascii == 38) //&, valida utilização de variável
         {
-            charIndex--;
-            char *varname = checkVariableName();
-            Token *token = getTokenByName(varname);
-            if (ascii == 61 && token != NULL) //=
-            {
-                token->value = checkExpression();
-            }else if(token == NULL)
-                log_abort("Utilização de variável não declarada, variável: %s, linha: %d.\n", varname, lineIndex + 1);
-                
+            checksForVariableUsage(TRUE);
         }
         else
             log_abort("Caracter inesperado na linha: %d, caracter: %c.\n", lineIndex + 1, c);

@@ -54,7 +54,7 @@ Token *pushToken(char *name,
     token->type = type;
     token->dataType = dataType;
     token->startCharIndex = startTokenIndex;
-    token->lineIndex = lineIndex;
+    token->startLineIndex = lineIndex;
     token->parent = scopeToken;
 
     list_append(&symbolList->tokens, token);

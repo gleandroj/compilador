@@ -4,12 +4,20 @@ principal(){
     caractere &nome[30];
     leitura(&nome, &b);
     se(){
-        se();
-        senao {
-            funcao fnada();
-            funcao fnada();
-        }
+        funcao fnada();
+        funcao fnada();
     }
 }
 
-funcao fnada(){}
+funcao fnada(){
+    inteiro &aa, &bb, &cc;
+    &b = 0;
+    para(&a=0;&a<10;&a++){
+        &b = &b + &a;
+        inteiro &para;
+        para(&a=0;&a<10;&a++){
+            &b = &b + &a;
+            inteiro &pp;
+        }
+    }
+}
