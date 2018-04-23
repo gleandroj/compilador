@@ -99,12 +99,7 @@ char *checkDataLenght();
 char *checkExpression();
 
 /**
- * Leia até ponto-e-virgula (;) ou quebra de linha (\n)
- */
-void readToSemicolonOrBreakLine();
-
-/*
- * Leia até o caracter passado como parâmetro 
+ * Leia até os caracteres passados como parâmetro 
  */
 void readTo(int chars[], int len);
 

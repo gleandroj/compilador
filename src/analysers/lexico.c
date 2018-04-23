@@ -314,12 +314,6 @@ char *checkExpression()
     return expressao;
 }
 
-void readToSemicolonOrBreakLine() //; or \n
-{
-    int w[] = {10, 59}; // ; || \n
-    readTo(w, 2);
-}
-
 void readTo(int chars[], int len)
 {
     Booleano done = FALSE;
@@ -402,8 +396,11 @@ void checkFunctionCallOrFail(char *funname, Booleano allowAnalyse)
     //Verifica se a função existe, se não morre o processo
     if (allowAnalyse)
         analiseFunctionByNameOrFail(funname);
+    
     //Ignora validação da chamada da função, leia até ;
-    readToSemicolonOrBreakLine();
+    int w[] = {10, 59}; // ; || \n
+    readTo(w, 2);
+    
     if (ascii != 59) //;
         log_abort("Declaração/chamada de função inválida, na linha: %d, caracter esperado: \';\'.\n", lineIndex);
 }
@@ -412,8 +409,10 @@ void checkReservedFunctionCall()
 {
     if ((int)nextChar() != 40) //(
         log_abort("Chamada de função reservada incorreta, caracter esperado: \'(\' na linha: %d.\n", lineIndex + 1);
-
-    readToSemicolonOrBreakLine();
+    
+    //leia até ;
+    int w[] = {10, 59}; // ; || \n
+    readTo(w, 2);
 
     if (ascii != 59) // ;
         log_abort("Chamada de função reservada inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
@@ -744,30 +743,17 @@ void findTokens()
 
             //Valida modulo/funcao principal
             if (possibleType == principal)
-            {
                 checkMainFunction();
-                continue;
-            }
             else if (possibleType == funcao) //valida declaração/chamada de funcao
-            {
                 checkFunctionCallOrStatment();
-            }
             else if (possibleType == variavel) //valida declaração de variável
-            {
                 checkVariableDeclaration();
-            }
             else if (possibleType == funcao_reservada) //valida chamada de função reservada (leitura, escrita)
-            {
                 checkReservedFunctionCall();
-            }
             else if (possibleType == palavra_reservada && pwi == para_index) //valida palavra reservada (para)
-            {
                 checkForStatment();
-            }
             else if (possibleType == palavra_reservada && (pwi == se_index || pwi == senao_index)) //valida palavra reservada (se, senao)
-            {
                 checkIfElseStatment();
-            }
         }
         else if (ascii == 125) //}, fim de escopo de função
         {
@@ -789,9 +775,7 @@ void findTokens()
             }
         }
         else if (ascii == 38) //&, valida utilização de variável
-        {
             checksForVariableUsage(TRUE);
-        }
         else
             log_abort("Caracter inesperado na linha: %d, caracter: %c.\n", lineIndex + 1, c);
     }
