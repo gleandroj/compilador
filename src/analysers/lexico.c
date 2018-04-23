@@ -291,6 +291,15 @@ char *checkExpression()
         }
         else if (ascii == 34) //"
         {
+            do
+            {
+                buffer[len++] = c;
+            } while ((int)nextChar() != 34 && ascii != 10 && ascii != 59); // " \n ;
+
+            if (c == 34)
+                buffer[len++] = c;
+            else
+                log_abort("Formação de string incorreta na linha: %d", lineIndex + 1);
         }
 
         if (ascii == 42 || ascii == 43 || ascii == 45 || ascii == 47 || ascii == 94) // * +, -, /, ^
@@ -391,11 +400,11 @@ void checkFunctionCallOrFail(char *funname, Booleano allowAnalyse)
     //Verifica se a função existe, se não morre o processo
     if (allowAnalyse)
         analiseFunctionByNameOrFail(funname);
-    
+
     //Ignora validação da chamada da função, leia até ;
     int w[] = {10, 59}; // ; || \n
     readTo(w, 2);
-    
+
     if (ascii != 59) //;
         log_abort("Declaração/chamada de função inválida, na linha: %d, caracter esperado: \';\'.\n", lineIndex);
 }
@@ -404,7 +413,7 @@ void checkReservedFunctionCall()
 {
     if ((int)nextChar() != 40) //(
         log_abort("Chamada de função reservada incorreta, caracter esperado: \'(\' na linha: %d.\n", lineIndex + 1);
-    
+
     //leia até ;
     int w[] = {10, 59}; // ; || \n
     readTo(w, 2);
@@ -451,7 +460,7 @@ void checkVariableDeclaration()
         else if (ascii == 61) //=
         {
             char *dataValue = checkExpression();
-            printf("Declaração de variável com atribuição.\n");
+            pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), dataValue, dataLenght, lineIndex, startTokenIndex, scopeToken);
         }
         else
             log_abort("Declaração de variável incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
@@ -776,7 +785,7 @@ void findTokens()
     }
 }
 
-void lexical_analysis(File *file)
+void lexicalAnalysis(File *file)
 {
     assert((_file = file) != NULL);
     initialize();

@@ -62,6 +62,11 @@ Token *pushToken(char *name,
  */
 Token *getTokenByName(char *name);
 
+/**
+ * Imprime Tabela de Simbolos
+ */
+void printSymbolList();
+
 extern SymbolList *symbolList;
 
 #endif

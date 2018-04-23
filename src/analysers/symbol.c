@@ -24,7 +24,7 @@ Token *pushToken(char *name,
                  char *dataLenght,
                  int lineIndex,
                  int startTokenIndex,
-                 Token* scopeToken)
+                 Token *scopeToken)
 {
     Token *token = allocate_memory(sizeof(Token));
 
@@ -62,7 +62,7 @@ Token *pushToken(char *name,
 
     const char *_ttype = type == argumento ? "(argumento)" : (type == variavel ? "(variavel)" : type == funcao ? "(funcao)" : type == principal ? "(princial)" : type == funcao_reservada ? "funcao_reservada" : "palavra_reservada");
     const char *_tdatatype = dataType == inteiro ? "inteiro" : (dataType == caractere ? "caractere" : "vazio");
-    log_info("Novo token: %s %s %s %s\n", _ttype, _tdatatype, token->name, dataLenght != NULL ? dataLenght : "");
+    log_debug("Novo token: %s %s %s %s\n", _ttype, _tdatatype, token->name, dataLenght != NULL ? dataLenght : "");
 
     return token;
 }
@@ -86,4 +86,20 @@ Token *getTokenByName(char *name)
     }
 
     return NULL;
+}
+
+Booleano _printToken(void *data)
+{
+    Token *token = (Token *)data;
+    const char *_tdatatype = token->dataType == inteiro ? "inteiro" : (token->dataType == caractere ? "caractere" : "vazio");
+    printf("|%10s|%10s|%16s|%10s|\n", _tdatatype, token->name, token->value, token->parent ? token->parent->name : "");
+    return TRUE;
+}
+
+void printSymbolList()
+{
+    printf("---------------------------------------------------\n");
+    printf("|   Tipo   |   Nome   | Possível Valor |  Escopo  |\n");
+    list_for_each(&symbolList->tokens, _printToken);
+    printf("---------------------------------------------------\n");
 }

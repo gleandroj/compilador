@@ -167,6 +167,6 @@ void findTokens();
 /**
  * Realiza a análise léxica
  */
-void lexical_analysis(File *file);
+void lexicalAnalysis(File *file);
 
 #endif

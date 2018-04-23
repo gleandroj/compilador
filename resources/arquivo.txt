@@ -1,7 +1,7 @@
 
 principal(){
     inteiro &a, &b, &c;
-    caractere &nome[30];
+    caractere &nome[30] = "Teste";
     leitura(&nome, &b);
     se(){
         funcao fnada();
