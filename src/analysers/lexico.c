@@ -245,7 +245,7 @@ char *checkDataLenght()
         {
             if (pwi == caractere_index && (ascii < 48 || ascii > 57))
                 log_abort("Declaração de variável incorreta na linha: %d, caracter: \'%c\' .\n", lineIndex + 1, c);
-            else if (pwi == decimal_index && ((ascii < 48 || ascii > 57) || ascii != 46))
+            else if (pwi == decimal_index && (ascii < 48 || ascii > 57) && ascii != 46)
                 log_abort("Declaração de variável incorreta na linha: %d, caracter: \'%c\' .\n", lineIndex + 1, c);
 
             buffer[len] = c;
