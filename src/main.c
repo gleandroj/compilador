@@ -19,7 +19,10 @@ int main()
 
     lexicalAnalysis(file);
     printSymbolList();
-
+    destroySymbolList();
+    
     file_destroy(file);
+    
     log_info("Processo de compilação finalizado...\n");
+    log_info("Current used memory: %d.\n", current_used_memory());
 }

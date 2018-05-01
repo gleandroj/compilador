@@ -67,6 +67,11 @@ Token *getTokenByName(char *name);
  */
 void printSymbolList();
 
+/**
+ * Deleta a tabela de simbolos
+ */
+void destroySymbolList();
+
 extern SymbolList *symbolList;
 
 #endif

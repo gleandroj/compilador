@@ -10,11 +10,22 @@
 #include "../util/helpers.h"
 #include "../util/log.h"
 
+SymbolList *symbolList;
+
+void freeToken(void *data)
+{
+    Token *token = (Token *)data;
+    free_memory(token->name);
+    if(token->value != NULL) free_memory(token->value);
+    if(token->dataLenght != NULL) free_memory(token->dataLenght);
+    free_memory(token);
+}
+
 void newSymbolList()
 {
     symbolList = (SymbolList *)allocate_memory(sizeof(SymbolList));
     symbolList->tokenCount = 0;
-    list_new(&symbolList->tokens, sizeof(Token), NULL);
+    list_new(&symbolList->tokens, sizeof(Token), freeToken);
 }
 
 Token *pushToken(char *name,
@@ -94,6 +105,12 @@ Booleano _printToken(void *data)
     const char *_tdatatype = token->dataType == inteiro ? "inteiro" : (token->dataType == caractere ? "caractere" : "vazio");
     printf("|%10s|%10s|%16s|%10s|\n", _tdatatype, token->name, token->value, token->parent ? token->parent->name : "");
     return TRUE;
+}
+
+void destroySymbolList()
+{
+    list_destroy(&symbolList->tokens);
+    free_memory(symbolList);
 }
 
 void printSymbolList()

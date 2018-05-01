@@ -39,10 +39,17 @@ char c;
 TokenType possibleType = nao_identificado;
 ReservedWordsIndex pwi = -1;
 
+void freeFunStackData(void *data)
+{
+    FunStackData *fs = (FunStackData *)data;
+    free_memory(fs->funname);
+    free_memory(fs);
+}
+
 void newFunStack()
 {
     funStack = (List *)allocate_memory(sizeof(List));
-    list_new(funStack, sizeof(FunStackData), NULL);
+    list_new(funStack, sizeof(FunStackData), freeFunStackData);
 }
 
 void log_abort(char *message, ...)
@@ -189,7 +196,7 @@ char *checkVariableName()
 
 char *checkFunctionName()
 {
-    int varlen = 1;
+    int len = 1;
     char buffer[MAX_VARIABLE_NAME_LEN];
 
     if ((int)nextChar() != 102)
@@ -200,12 +207,12 @@ char *checkFunctionName()
     //a..z A..Z 0..9
     while ((((int)nextChar() >= 97 && ascii <= 122) || (ascii >= 65 && ascii <= 90) || (ascii >= 48 && ascii <= 57)))
     {
-        buffer[varlen] = c;
-        varlen++;
+        buffer[len] = c;
+        len++;
     }
-    buffer[varlen] = '\0';
-    char *fname = (char *)allocate_memory(sizeof(char) * (varlen + 1));
-    memcpy(fname, buffer, varlen + 1);
+    buffer[len] = '\0';
+    char *fname = (char *)allocate_memory(sizeof(char) * (len + 1));
+    memcpy(fname, buffer, len + 1);
     return fname;
 }
 
@@ -268,7 +275,8 @@ char *checkDataLenght()
 
 char *checkExpression()
 {
-    char buffer[MAX_VARIABLE_NAME_LEN];
+    char buffer[MAX_VARIABLE_NAME_LEN], lc;
+    Booleano lo = FALSE;
     int len = 0;
 
     do
@@ -281,6 +289,7 @@ char *checkExpression()
             int i, varlen = strlen(varname);
             for (i = 0; i < varlen; i++, len++)
                 buffer[len] = varname[i];
+            lo = FALSE;
         }
         else if (ascii >= 48 && ascii <= 57) //0..9
         {
@@ -288,6 +297,7 @@ char *checkExpression()
             {
                 buffer[len++] = c;
             } while ((int)nextChar() >= 48 && ascii <= 57);
+            lo = FALSE;
         }
         else if (ascii == 34) //"
         {
@@ -300,13 +310,29 @@ char *checkExpression()
                 buffer[len++] = c;
             else
                 log_abort("Formação de string incorreta na linha: %d", lineIndex + 1);
+            lo = FALSE;
         }
-
-        if (ascii == 42 || ascii == 43 || ascii == 45 || ascii == 47 || ascii == 94) // * +, -, /, ^
+        else if ((!lo || (lc == 43 && ascii == 43) || (lc == 45 && ascii == 45)) && (ascii == 42 || ascii == 43 || ascii == 45 || ascii == 47 || ascii == 94)) // * +, -, /, ^
+        {
             buffer[len++] = c;
+            if ((lc == 43 && ascii == 43) || (lc == 45 && ascii == 45))
+            {
+                if (len > 2)
+                    log_abort("Expressão incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
+                char *varname = checkVariableName();
+                int i, varlen = strlen(varname);
+                for (i = 0; i < varlen; i++, len++)
+                    buffer[len] = varname[i];
+                break;
+            }
+            lo = TRUE;
+        }
         else if (ascii == 40 || ascii == 41) //()
             buffer[len++] = c;
+        else if (ascii != 32 && ascii != 10 && ascii != 59) //space, \n, ;
+            log_abort("Expressão incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
 
+        lc = c;
     } while (ascii != 10 && ascii != 59); //\n ;
 
     if (ascii != 59) //;
@@ -385,7 +411,7 @@ void analiseFunctionByNameOrFail(char *funname)
         log_abort("Chamada de função não declarada na linha: %d, função: funcao %s.\n", lineIndex + 1, funname);
     //Coloca na pilha de analise de função
     list_append(funStack, fs);
-    //Aponta para o caracter do inicio da declaração da função
+    //Aponta para o caracter/linha do inicio da declaração da função
     charIndex = fs->startIndex;
     lineIndex = fs->lineIndex;
     //Ignora o Scopo atual
@@ -461,6 +487,7 @@ void checkVariableDeclaration()
         {
             char *dataValue = checkExpression();
             pushToken(varname, variavel, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), dataValue, dataLenght, lineIndex, startTokenIndex, scopeToken);
+            break;
         }
         else
             log_abort("Declaração de variável incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
@@ -644,6 +671,14 @@ void checksForVariableUsage(Booleano allowAssign)
         if (allowAssign)
             token->value = expression;
     }
+    else if ((ascii == 45 || ascii == 43) && token != NULL) // +, -
+    {
+        int la = ascii;
+        if (la != (int)nextChar())
+            log_abort("Expressão incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
+        if ((int)nextChar() != 59) //;
+            log_abort("Finalização de expressão inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
+    }
     else if (token == NULL)
         log_abort("Utilização de variável não declarada, variável: %s, linha: %d.\n", varname, lineIndex + 1);
 }
@@ -774,12 +809,17 @@ void findTokens()
                 charIndex = fs->backtrackCharIndex;
                 lineIndex = fs->backtrackLineIndex;
                 setScope(fs->backtrackScope);
-                //Retornar para a função checkFunctionCallOrFail.
-                return;
+                freeFunStackData(fs);
+                return; //Retornar para a função checkFunctionCallOrFail.
             }
         }
         else if (ascii == 38) //&, valida utilização de variável
             checksForVariableUsage(TRUE);
+        else if (ascii == 43 || ascii == 45) //-, +
+        {
+            charIndex--;
+            checkExpression();
+        }
         else
             log_abort("Caracter inesperado na linha: %d, caracter: %c.\n", lineIndex + 1, c);
     }
@@ -790,5 +830,6 @@ void lexicalAnalysis(File *file)
     assert((_file = file) != NULL);
     initialize();
     findTokens();
-    log_info("Finalizado analise lexica\n");
+    list_destroy(funStack);
+    log_info("Finalizado analise lexica.\n");
 }
