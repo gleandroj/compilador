@@ -275,9 +275,9 @@ char *checkDataLenght()
 
 char *checkExpression()
 {
-    char buffer[MAX_VARIABLE_NAME_LEN], lc;
-    Booleano lo = FALSE;
-    int len = 0;
+    char buffer[MAX_VARIABLE_NAME_LEN];
+    Booleano lo = FALSE, fi = FALSE;
+    int len = 0, la, varlen;
 
     do
     {
@@ -286,10 +286,17 @@ char *checkExpression()
         {
             charIndex--;
             char *varname = checkVariableName();
-            int i, varlen = strlen(varname);
+            int i;
+            varlen = strlen(varname);
             for (i = 0; i < varlen; i++, len++)
                 buffer[len] = varname[i];
             lo = FALSE;
+            free_memory(varname);
+            if (ascii == 42 || ascii == 43 || ascii == 45 || ascii == 47 || ascii == 94) // * +, -, /, ^
+            {
+                charIndex--;
+                continue;
+            }
         }
         else if (ascii >= 48 && ascii <= 57) //0..9
         {
@@ -298,6 +305,7 @@ char *checkExpression()
                 buffer[len++] = c;
             } while ((int)nextChar() >= 48 && ascii <= 57);
             lo = FALSE;
+            varlen = 0;
         }
         else if (ascii == 34) //"
         {
@@ -311,18 +319,31 @@ char *checkExpression()
             else
                 log_abort("Formação de string incorreta na linha: %d", lineIndex + 1);
             lo = FALSE;
+            varlen = 0;
         }
-        else if ((!lo || (lc == 43 && ascii == 43) || (lc == 45 && ascii == 45)) && (ascii == 42 || ascii == 43 || ascii == 45 || ascii == 47 || ascii == 94)) // * +, -, /, ^
+        else if ((!lo || (la == 43 && ascii == 43) || (la == 45 && ascii == 45)) && (ascii == 42 || ascii == 43 || ascii == 45 || ascii == 47 || ascii == 94)) // * +, -, /, ^
         {
             buffer[len++] = c;
-            if ((lc == 43 && ascii == 43) || (lc == 45 && ascii == 45))
+            Booleano isSameOp = (la == 43 && ascii == 43) || (la == 45 && ascii == 45);
+            if (isSameOp && ((int)buffer[len - 2] != ascii || len == 2))
             {
-                if (len > 2)
+                if (len > 2 && ((varlen + 1) != len))
                     log_abort("Expressão incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
-                char *varname = checkVariableName();
-                int i, varlen = strlen(varname);
-                for (i = 0; i < varlen; i++, len++)
-                    buffer[len] = varname[i];
+                else if (len == 2)
+                {
+                    char *varname = checkVariableName();
+                    int i, varlen = strlen(varname);
+                    for (i = 0; i < varlen; i++, len++)
+                        buffer[len] = varname[i];
+                    free_memory(varname);
+                    charIndex--;
+                }
+                nextChar();
+                fi = TRUE;
+                break;
+            }else if(isSameOp && (int)buffer[len - 2] == ascii){
+                nextChar();
+                fi = TRUE;
                 break;
             }
             lo = TRUE;
@@ -332,9 +353,12 @@ char *checkExpression()
         else if (ascii != 32 && ascii != 10 && ascii != 59) //space, \n, ;
             log_abort("Expressão incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
 
-        lc = c;
+        la = ascii;
     } while (ascii != 10 && ascii != 59); //\n ;
 
+    int lb = (int)buffer[len - 1];
+    if (!fi && (lb == 42 || lb == 43 || lb == 45 || lb == 47 || lb == 94))
+        log_abort("Expressão incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, buffer[len - 1]);
     if (ascii != 59) //;
         log_abort("Finalização de expressão inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
 
@@ -671,13 +695,10 @@ void checksForVariableUsage(Booleano allowAssign)
         if (allowAssign)
             token->value = expression;
     }
-    else if ((ascii == 45 || ascii == 43) && token != NULL) // +, -
+    else if (token != NULL && (ascii == 42 || ascii == 43 || ascii == 45 || ascii == 47 || ascii == 94)) // * +, -, /, ^
     {
-        int la = ascii;
-        if (la != (int)nextChar())
-            log_abort("Expressão incorreta, linha: %d, caracter inesperado: %c.\n", lineIndex + 1, c);
-        if ((int)nextChar() != 59) //;
-            log_abort("Finalização de expressão inválida, caracter esperado: \';\', na linha: %d.\n", lineIndex + 1);
+        charIndex -= (strlen(varname) + 2);
+        checkExpression();
     }
     else if (token == NULL)
         log_abort("Utilização de variável não declarada, variável: %s, linha: %d.\n", varname, lineIndex + 1);
