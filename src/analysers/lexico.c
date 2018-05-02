@@ -341,7 +341,9 @@ char *checkExpression()
                 nextChar();
                 fi = TRUE;
                 break;
-            }else if(isSameOp && (int)buffer[len - 2] == ascii){
+            }
+            else if (isSameOp && (int)buffer[len - 2] == ascii)
+            {
                 nextChar();
                 fi = TRUE;
                 break;
@@ -851,6 +853,8 @@ void lexicalAnalysis(File *file)
     assert((_file = file) != NULL);
     initialize();
     findTokens();
+    if (getTokenByName((char *)reserverd_words[0]) == NULL)
+        log_abort("Módulo Principal Inexistente.\n");
     list_destroy(funStack);
     log_info("Finalizado analise lexica.\n");
 }
