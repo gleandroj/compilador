@@ -558,7 +558,17 @@ void checkFunctionCallOrStatment()
                     log_abort("Declaração de argumento incorreto na linha: %d.\n", lineIndex + 1, c);
 
                 char *argname = checkVariableName();
-                char *dataLenght = checkDataLenght();
+                char *dataLenght = NULL;
+
+                if (getTokenByName(argname) != NULL)
+                    log_abort("Argumento/Variável já declarada, variável: %s, linha: %d.\n", argname, lineIndex + 1);
+
+                //char *dataLenght = checkDataLenght();//
+                /*  
+                    Para os nomes de variáveis não considerar as informações
+                    de tamanho no caso de caractere ou especificação de casas
+                    decimais em caso de decimal
+                */
 
                 pushToken(argname, argumento, pwi == inteiro_index ? inteiro : (pwi == caractere_index ? caractere : decimal), NULL, dataLenght, lineIndex, startTokenIndex, scopeToken);
             } while (ascii == 44 && ((int)nextCharIgnoreSpace() == 105 || ascii == 99 || ascii == 100)); //, &, i, c, d

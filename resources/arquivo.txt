@@ -9,9 +9,10 @@ principal(){
     }
 }
 
-funcao fnada(){
+funcao fnada(inteiro &a1, caractere &teste){
     inteiro &aa, &bb, &cc;
     &b = -10 - 20;
+    &b++;
     para(&a=0;&a<10;&a++){
         &b = &b + &a;
         inteiro &para;

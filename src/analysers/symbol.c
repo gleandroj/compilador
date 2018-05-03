@@ -103,7 +103,7 @@ Booleano _printToken(void *data)
 {
     Token *token = (Token *)data;
     const char *_tdatatype = token->dataType == inteiro ? "inteiro" : (token->dataType == caractere ? "caractere" : "vazio");
-    printf("|%10s|%10s|%16s|%10s|\n", _tdatatype, token->name, token->value, token->parent ? token->parent->name : "");
+    printf("|%10s|%10s|%10s|%16s|%10s|\n", _tdatatype, token->name, token->dataLenght == NULL ? "" : token->dataLenght, token->value, token->parent ? token->parent->name : "");
     return TRUE;
 }
 
@@ -116,7 +116,7 @@ void destroySymbolList()
 void printSymbolList()
 {
     printf("---------------------------------------------------\n");
-    printf("|   Tipo   |   Nome   | Possível Valor |  Escopo  |\n");
+    printf("|   Tipo   |   Nome   | Tamanho  | Possível Valor |  Escopo  |\n");
     list_for_each(&symbolList->tokens, _printToken);
     printf("---------------------------------------------------\n");
 }
