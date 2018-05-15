@@ -119,23 +119,27 @@ void verifyPossibleTokenType()
         pwi = escrita_index;
         possibleType = funcao_reservada;
     }
-    else if (ascii == (int)reserverd_words[4][0])
+    else if (ascii == (int)reserverd_words[4][0]) //s
     {
         int _ascii = ascii;
         char _c = c;
-        if ((int)nextChar() == (int)reserverd_words[5][1] && (int)nextChar() == (int)reserverd_words[5][2])
+        if ((int)nextChar() == (int)reserverd_words[5][1]) //e
         {
-            pwi = senao_index;
-            possibleType = palavra_reservada;
-        }
-        else
-        {
-            pwi = se_index;
-            possibleType = palavra_reservada;
+            if ((int)nextChar() == (int)reserverd_words[5][2]) //n
+            {
+                pwi = senao_index;
+                possibleType = palavra_reservada;
+            }
+            else
+            {
+                pwi = se_index;
+                possibleType = palavra_reservada;
+            }
+            charIndex--;
         }
         ascii = _ascii;
         c = _c;
-        charIndex -= 2;
+        charIndex--;
     }
     else if (ascii == (int)reserverd_words[7][0])
     {
