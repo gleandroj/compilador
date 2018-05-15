@@ -46,6 +46,7 @@ void log_error(char *message, ...)
     va_start(args, message);
     _log(message, LOG_ERROR, args);
     va_end(args);
+    exit(0);
 }
 
 void log_warning(char *message, ...)
