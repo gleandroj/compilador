@@ -115,8 +115,8 @@ void destroySymbolList()
 
 void printSymbolList()
 {
-    printf("---------------------------------------------------\n");
+    printf("-------------------------------------------------------------\n");
     printf("|   Tipo   |   Nome   | Tamanho  | Possível Valor |  Escopo  |\n");
     list_for_each(&symbolList->tokens, _printToken);
-    printf("---------------------------------------------------\n");
+    printf("-------------------------------------------------------------\n");
 }
