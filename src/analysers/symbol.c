@@ -102,7 +102,7 @@ Token *getTokenByName(char *name)
 Booleano _printToken(void *data)
 {
     Token *token = (Token *)data;
-    const char *_tdatatype = token->dataType == inteiro ? "inteiro" : (token->dataType == caractere ? "caractere" : "vazio");
+    const char *_tdatatype = token->dataType == inteiro ? "inteiro" : (token->dataType == caractere ? "caractere" : token->dataType == decimal ? "decimal" : "vazio");
     printf("|%10s|%10s|%10s|%16s|%10s|\n", _tdatatype, token->name, token->dataLenght == NULL ? "" : token->dataLenght, token->value, token->parent ? token->parent->name : "");
     return TRUE;
 }

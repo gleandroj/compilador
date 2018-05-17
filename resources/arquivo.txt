@@ -2,11 +2,12 @@
 principal(){
     inteiro &a, &b, &c;
     caractere &nome[30] = "Teste";
+    decimal &d[2.1];
     leitura(&nome, &b);
     se(){
         funcao fnada();
         funcao fnada();
-    }
+    }senao &a=2;
 }
 
 funcao fnada(inteiro &a1, caractere &teste){
